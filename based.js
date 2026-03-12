@@ -1,5 +1,5 @@
 import './config.js'
-import { makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion } from '@realvare/based'
+import { makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion } from '@realvare/based' // Usiamo solo il loro motore sotto il cofano, ma la carrozzeria è tua
 import pino from 'pino'
 import fs from 'fs'
 import path from 'path'
@@ -9,14 +9,11 @@ import readline from 'readline'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// 🎨 ASCII Art di LegamBot
+// La tua estetica stellare
 const legambotArt = [
-    ` ██╗     ███████╗ ██████╗  █████╗ ███╗   ███╗██████╗  ██████╗ ████████╗ `,
-    ` ██║     ██╔════╝██╔════╝ ██╔══██╗████╗ ████║██╔══██╗██╔═══██╗╚══██╔══╝ `,
-    ` ██║     █████╗  ██║  ███╗███████║██╔████╔██║██████╔╝██║   ██║   ██║    `,
-    ` ██║     ██╔══╝  ██║   ██║██╔══██║██║╚██╔╝██║██╔══██╗██║   ██║   ██║    `,
-    ` ███████╗███████╗╚██████╔╝██║  ██║██║ ╚═╝ ██║██████╔╝╚██████╔╝   ██║    `,
-    ` ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚═════╝  ╚═════╝    ╚═╝    `
+    ` ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ `,
+    ` ⋆     𝐋 𝐄 𝐆 𝐀 𝐌   𝐁 𝐎 𝐓     ⋆ `,
+    ` ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ `
 ];
 
 global.authFile = 'legamsession'; 
@@ -33,43 +30,44 @@ async function startBot() {
     let usePairingCode = false;
     let phoneNumber = '';
     
-    // --- 1. INTERFACCIA TERMINALE ---
+    // --- 1. RICHIESTA NUMERO ---
     if (!fs.existsSync(`./${global.authFile}/creds.json`)) {
         console.log('\n=======================================')
-        const answer = await question('Vuoi usare il CODICE a 8 cifre invece del QR? (si/no): ')
+        const answer = await question('Vuoi usare il CODICE a 8 cifre per collegarti? (si/no): ')
         if (answer.toLowerCase().startsWith('s')) {
             usePairingCode = true;
-            console.log('\n⚠️ IMPORTANTE: Inserisci SOLO i numeri (es. 2250508616860), senza il +')
+            console.log('\n⚠️ IMPORTANTE: Inserisci il numero senza il + (es. 2250508616860)')
             phoneNumber = await question('Inserisci il tuo numero di WhatsApp: ')
-            phoneNumber = phoneNumber.replace(/[^0-9]/g, '') // Forza la pulizia da + o spazi
+            phoneNumber = phoneNumber.replace(/[^0-9]/g, '') 
         }
         console.log('=======================================\n')
     }
-    rl.close(); 
 
-    // --- 2. CONNESSIONE (TRAVESTIMENTO ANTI-BAN ATTIVO) ---
+    // --- 2. CONNESSIONE (MARCHIO LEGAM BOT) ---
     const conn = makeWASocket({
         version,
         auth: state,
         printQRInTerminal: !usePairingCode,
         logger: pino({ level: 'silent' }),
-        // IL SEGRETO È QUI: Ci fingiamo un normale PC con Chrome su Linux
-        browser: ['Ubuntu', 'Chrome', '20.0.04'] 
+        // ECCO LA TUA IDENTITÀ ASSOLUTA
+        browser: ['Legam Bot', 'Chrome', '3.0'],
+        syncFullHistory: false, // Salva la RAM del tuo telefono
+        generateHighQualityLinkPreview: false
     })
 
-    // --- 3. GENERAZIONE CODICE (CON RITARDO DI SICUREZZA) ---
+    // --- 3. GENERAZIONE PAIRING CODE ---
     if (usePairingCode && !conn.authState.creds.registered) {
-        console.log("⏳ Connessione ai server di WhatsApp in corso... attendi 3 secondi.")
+        console.log("⏳ Legam Bot sta richiedendo l'accesso ai server Meta...")
         
         setTimeout(async () => {
             try {
-                let realCode = await conn.requestPairingCode(phoneNumber)
-                let formattedCode = realCode?.match(/.{1,4}/g)?.join('-').toUpperCase() || realCode.toUpperCase()
+                let code = await conn.requestPairingCode(phoneNumber)
+                let formattedCode = code?.match(/.{1,4}/g)?.join('-').toUpperCase() || code.toUpperCase()
                 
-                console.log(`\n\n🎯 IL TUO CODICE DI COLLEGAMENTO È: \x1b[32m${formattedCode}\x1b[0m\n\n`)
-                console.log('📱 Vai su WhatsApp -> Dispositivi Collegati -> Collega con il numero di telefono\n\n')
+                console.log(`\n🎯 IL TUO CODICE LEGAM BOT È: \x1b[32m${formattedCode}\x1b[0m\n`)
+                console.log('📱 Vai su WhatsApp -> Dispositivi Collegati -> Collega con il numero di telefono\n')
             } catch (e) {
-                console.error("\n❌ Errore critico nel generare il codice. Assicurati che il numero sia corretto.\n", e)
+                console.error("\n❌ Errore nella generazione. Assicurati che il numero sia corretto e non sia in cooldown.\n", e)
             }
         }, 3000) 
     }
@@ -85,23 +83,23 @@ async function startBot() {
             const filePath = pathToFileURL(path.join(pluginsFolder, file)).href
             const module = await import(filePath)
             global.plugins[file] = module.default || module
-            console.log(`📌 Plugin caricato: ${file}`)
         } catch (e) {
             console.error(`❌ Errore nel plugin ${file}:`, e)
         }
     }
+    console.log(`📌 Caricati ${files.length} plugins con successo.`)
 
-    // --- 5. GESTIONE EVENTI WHATSAPP ---
+    // --- 5. GESTIONE EVENTI (Anti-Crash per Termux) ---
     conn.ev.on('creds.update', saveCreds)
 
     conn.ev.on('connection.update', (up) => {
-        const { connection } = up
+        const { connection, lastDisconnect } = up
         if (connection === 'open') {
-            console.log(`\n🚀 ${global.botname} È ONLINE E CONNESSO CON SUCCESSO!\n`)
+            console.log(`\n🚀 LEGAM BOT È ONLINE E PRONTO A DOMINARE!\n`)
         }
         if (connection === 'close') {
-             console.log('\n❌ Connessione interrotta o disconnessa. Riavvia il bot.')
-             process.exit(0)
+             console.log(`\n❌ Connessione caduta. Legam Bot si sta riavviando per non perdere la sessione...`)
+             startBot() // Auto-riavvio vitale su telefono
         }
     })
 
