@@ -1,5 +1,5 @@
 import './config.js'
-import { makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, delay } from '@realvare/based'
+import { makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion } from '@realvare/based'
 import pino from 'pino'
 import fs from 'fs'
 import path from 'path'
@@ -9,7 +9,7 @@ import readline from 'readline'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// La tua ASCII Art
+// Il Logo di LegamBot
 const legambotArt = [
     ` ██╗     ███████╗ ██████╗  █████╗ ███╗   ███╗██████╗  ██████╗ ████████╗ `,
     ` ██║     ██╔════╝██╔════╝ ██╔══██╗████╗ ████║██╔══██╗██╔═══██╗╚══██╔══╝ `,
@@ -21,7 +21,7 @@ const legambotArt = [
 
 global.authFile = 'legamsession'; 
 
-// Funzione per fare domande nel terminale
+// Sistema per fare le domande nel terminale
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
 const question = (text) => new Promise((resolve) => rl.question(text, resolve))
 
@@ -31,44 +31,54 @@ async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState(global.authFile)
     const { version } = await fetchLatestBaileysVersion()
 
-    // Chiediamo se vuole usare il codice invece del QR
     let usePairingCode = false;
     let phoneNumber = '';
     
-    // Controlla se ci sono già le credenziali (se è già connesso non chiede nulla)
+    // 1. Chiede il codice se non sei ancora loggato
     if (!fs.existsSync(`./${global.authFile}/creds.json`)) {
         console.log('\n=======================================')
-        const answer = await question('Vuoi usare il CODICE (Pairing Code) invece del QR? (si/no): ')
+        const answer = await question('Vuoi usare il CODICE a 8 cifre invece del QR? (si/no): ')
         if (answer.toLowerCase().startsWith('s')) {
             usePairingCode = true;
             console.log('\n⚠️ IMPORTANTE: Inserisci il numero con il prefisso internazionale, SENZA il + o gli zeri!')
             console.log('Esempio Italia: 393510000000')
             phoneNumber = await question('Inserisci il tuo numero di WhatsApp: ')
-            phoneNumber = phoneNumber.replace(/[^0-9]/g, '') // Pulisce da spazi o +
+            phoneNumber = phoneNumber.replace(/[^0-9]/g, '') // Pulisce errori di digitazione
         }
         console.log('=======================================\n')
     }
+    rl.close(); // Chiude il prompt del terminale per non bloccarlo
 
+    // 2. Avvia la connessione a WhatsApp
     const conn = makeWASocket({
         version,
         auth: state,
-        printQRInTerminal: !usePairingCode, // Stampa il QR SOLO se non usa il codice
+        printQRInTerminal: !usePairingCode, // Mostra il QR solo se hai risposto 'no'
         logger: pino({ level: 'silent' }),
         browser: [global.botname, 'Safari', '3.0']
     })
 
-    // --- GENERAZIONE CODICE 8 CIFRE ---
+    // --- 3. GENERAZIONE CODICE 8 CIFRE (CON RITARDO TATTICO) ---
     if (usePairingCode && !conn.authState.creds.registered) {
-        // Aspettiamo un secondo per dare il tempo al socket di avviarsi
-        await delay(1500)
-        let code = await conn.requestPairingCode(phoneNumber)
-        // Aggiungiamo un trattino per renderlo leggibile (es: ABCD-1234)
-        code = code?.match(/.{1,4}/g)?.join('-') || code
-        console.log(`\n\n🎯 IL TUO CODICE DI COLLEGAMENTO È: \x1b[32m${code}\x1b[0m\n\n`)
-        console.log('📱 Vai su WhatsApp -> Dispositivi Collegati -> Collega con il numero di telefono\n\n')
+        console.log("⏳ Connessione ai server di WhatsApp in corso... attendi 3 secondi.")
+        
+        setTimeout(async () => {
+            try {
+                // Richiede il vero codice ai server di WhatsApp
+                let realCode = await conn.requestPairingCode(phoneNumber)
+                
+                // Lo forza in MAIUSCOLO e mette il trattino in mezzo (es: ABCD-1234)
+                let formattedCode = realCode?.match(/.{1,4}/g)?.join('-').toUpperCase() || realCode.toUpperCase()
+                
+                console.log(`\n\n🎯 IL TUO CODICE DI COLLEGAMENTO È: \x1b[32m${formattedCode}\x1b[0m\n\n`)
+                console.log('📱 Vai su WhatsApp -> Dispositivi Collegati -> Collega con il numero di telefono\n\n')
+            } catch (e) {
+                console.error("\n❌ Errore nel generare il codice. Hai inserito il numero corretto (es: 39351...)?\n", e)
+            }
+        }, 3000) // Il famoso ritardo che risolve l'errore del codice
     }
 
-    // --- PLUGIN LOADER ---
+    // --- 4. CARICAMENTO PLUGIN ---
     global.plugins = {}
     const pluginsFolder = path.join(__dirname, 'plugins')
     if (!fs.existsSync(pluginsFolder)) fs.mkdirSync(pluginsFolder)
@@ -79,13 +89,13 @@ async function startBot() {
             const filePath = pathToFileURL(path.join(pluginsFolder, file)).href
             const module = await import(filePath)
             global.plugins[file] = module.default || module
-            console.log(`📌 Plugin: ${file}`)
+            console.log(`📌 Plugin caricato: ${file}`)
         } catch (e) {
             console.error(`❌ Errore plugin ${file}:`, e)
         }
     }
 
-    // --- EVENTI CONNESSIONE E MESSAGGI ---
+    // --- 5. GESTIONE EVENTI (Salvataggio e Messaggi) ---
     conn.ev.on('creds.update', saveCreds)
 
     conn.ev.on('connection.update', (up) => {
@@ -94,7 +104,8 @@ async function startBot() {
             console.log(`\n🚀 ${global.botname} È ONLINE E CONNESSO!\n`)
         }
         if (connection === 'close') {
-             console.log('\n❌ Connessione chiusa. Riavvio necessario.')
+             console.log('\n❌ Connessione chiusa. Riavvia il bot.')
+             process.exit(0)
         }
     })
 
@@ -103,4 +114,5 @@ async function startBot() {
     })
 }
 
+// Lancia il bot
 startBot()
