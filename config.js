@@ -1,36 +1,44 @@
+import fs from 'fs'
 import { fileURLToPath } from 'url'
 import path from 'path'
+import chalk from 'chalk'
 
-// 👑 CONFIGURAZIONE LEGAM BOT 👑
-
-// Inserisci il tuo numero (Senza il +)
+// 👑 CONFIGURAZIONE OWNER
 global.owner = [
-  ['393780450454', 'Giuse - Creatore Supremo', true] 
+  ['393780450454', 'Giuse', true], // Inserisci il tuo numero qui
 ]
 
-global.botName = 'Legam Bot'
-global.ownerName = 'Giuse'
+global.mods = []
+global.prems = []
 
-// I simboli che attivano i comandi
-global.prefix = /^[.!]/i 
+// 🤖 INFO BOT
+global.nomebot = '𝐋𝐄𝐆𝐀𝐌 𝐁𝐎𝐓'
+global.nomepack = 'Legam Bot Pack'
+global.autore = 'Giuse'
+global.prefix = /^[.!]/i
 
-// Nome della cartella per la sessione
-global.sessionName = 'legam_session'
+// 📂 SESSIONE
+global.authFile = 'varesession'
 
-// Messaggi di sistema (Arroganza Level: High)
-global.mess = {
-    owner: '『 👑 』 `Zitto. Solo Giuse può usare questo comando.`',
-    admin: '『 🛑 』 `Solo gli Admin possono darmi ordini qui dentro.`',
-    botAdmin: '『 🩼 』 `Fammi Admin o non potrò fare questa magia.`',
-    group: '『 ❌ 』 `Questo comando funziona solo nei gruppi.`',
-    error: '『 ⚠️ 』 `C\'è stato un errore nel sistema, Giuse sta arrivando.`'
+// 💬 MESSAGGI DI SISTEMA (dfail)
+global.dfail = (type, m, conn) => {
+    let msg = {
+        rowner: '『 👑 』 `Solo il Creatore Supremo può usare questo comando.`',
+        owner: '『 👑 』 `Accesso riservato agli sviluppatori autorizzati.`',
+        premium: '『 💎 』 `Comando esclusivo per utenti Premium.`',
+        group: '『 👥 』 `Questo comando funziona solo all\'interno dei gruppi.`',
+        private: '『 📩 』 `Usa questo comando nella chat privata del bot.`',
+        admin: '『 🛑 』 `Solo gli Amministratori possono darmi ordini.`',
+        botAdmin: '『 🤖 』 `Per favore, fammi Admin o non potrò agire.`',
+        disabled: '『 ⚠️ 』 `Questo comando è stato disattivato dallo Staff.`'
+    }[type]
+    if (msg) return m.reply(msg)
 }
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-export default {
-    __dirname,
-    __filename
-}
+let file = fileURLToPath(import.meta.url)
+fs.watchFile(file, () => {
+    fs.unwatchFile(file)
+    console.log(chalk.cyanBright("Aggiornamento config.js..."))
+    import(`${file}?update=${Date.now()}`)
+})
 
