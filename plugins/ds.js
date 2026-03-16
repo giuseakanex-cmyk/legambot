@@ -19,7 +19,7 @@ let handler = async (m, { conn }) => {
     }
 
     // --- 2. IMPOSTAZIONE CARTELLA ESATTA ---
-    const sessionFolder = './varesession'
+    const sessionFolder = './legamsession'
     
     if (!fs.existsSync(sessionFolder)) {
         return m.reply('⚠️ *Errore:* La cartella "varesession" non è stata trovata. Il bot è già pulito o il percorso è errato.')
