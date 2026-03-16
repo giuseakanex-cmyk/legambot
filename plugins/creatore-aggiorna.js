@@ -2,12 +2,11 @@ import { execSync } from 'child_process'
 
 let handler = async (m, { conn, text }) => {
     try {
-        // Reazione di caricamento
         await m.react('⏳') 
         
         let checkUpdates = execSync('git fetch && git status -uno', { encoding: 'utf-8' })
 
-        // CASO 1: Già aggiornato
+        // Caso 1: Già aggiornato
         if (checkUpdates.includes('Your branch is up to date') || checkUpdates.includes('nothing to commit')) {
             let msg = `
 ⊹ ࣪ ˖ ✦ ━━ 𝐀 𝐆 𝐆 𝐈 𝐎 𝐑 𝐍 𝐀 𝐌 𝐄 𝐍 𝐓 𝐎 ━━ ✦ ˖ ࣪ ⊹
@@ -22,7 +21,7 @@ let handler = async (m, { conn, text }) => {
             return
         }
 
-        // CASO 2: Aggiornamento disponibile
+        // Caso 2: Aggiornamento disponibile
         if (checkUpdates.includes('Your branch is behind')) {
             let updateLog = execSync('git reset --hard && git pull' + (m.fromMe && text ? ' ' + text : ''), { encoding: 'utf-8' })
             let msg = `
@@ -39,7 +38,7 @@ ${updateLog.trim()}
             await conn.reply(m.chat, msg, m)
             await m.react('🚀')
             
-        // CASO 3: Stato anomalo (Forzatura)
+        // Caso 3: Forzatura
         } else {
             let updateLog = execSync('git reset --hard && git pull' + (m.fromMe && text ? ' ' + text : ''), { encoding: 'utf-8' })
             let msg = `
@@ -58,7 +57,6 @@ ${updateLog.trim()}
         }
 
     } catch (err) {
-        // GESTIONE ERRORI
         let msg = `
 ⊹ ࣪ ˖ ✦ ━━ 𝐄 𝐑 𝐑 𝐎 𝐑 𝐄 ━━ ✦ ˖ ࣪ ⊹
 
@@ -78,6 +76,8 @@ ${err.message.trim()}
 handler.help = ['aggiorna']
 handler.tags = ['creatore']
 handler.command = /^(aggiorna|update|aggiornabot)$/i
-handler.owner = true // SOLO TU PUOI USARLO
+handler.owner = true
 
 export default handler
+
+
