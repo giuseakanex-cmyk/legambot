@@ -1,111 +1,131 @@
-import './config.js'
-import { makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion } from '@realvare/based' // Usiamo solo il loro motore sotto il cofano, ma la carrozzeria è tua
+import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, Browsers } from '@whiskeysockets/baileys'
 import pino from 'pino'
+import { Boom } from '@hapi/boom'
 import fs from 'fs'
-import path from 'path'
-import { fileURLToPath, pathToFileURL } from 'url'
-import { handler } from './handler.js'
 import readline from 'readline'
+import path from 'path'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+// 👑 CONFIGURAZIONI GLOBALI LEGAM BOT 👑
+global.owner = [
+  ['393330000000', 'Giuse - Creatore Supremo', true], // INSERISCI QUI IL TUO NUMERO VERO (Senza il +)
+]
+global.botName = 'Legam Bot'
+global.ownerName = 'Giuse'
+global.sessionName = 'varesession' // La cartella dove si salva la connessione (mantienila così non devi ricollegare)
 
-// La tua estetica stellare
-const legambotArt = [
-    ` ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ `,
-    ` ⋆     𝐋 𝐄 𝐆 𝐀 𝐌   𝐁 𝐎 𝐓     ⋆ `,
-    ` ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ `
-];
-
-global.authFile = 'legamsession'; 
-
+// Sistema per chiedere input nel terminale (per il Pairing Code)
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
 const question = (text) => new Promise((resolve) => rl.question(text, resolve))
 
-async function startBot() {
-    console.log(legambotArt.join('\n'));
+// 🛡️ ANTI-CRASH DI LUSSO (Impedisce al bot di spegnersi per piccoli errori)
+process.on('uncaughtException', console.error)
+process.on('unhandledRejection', console.error)
 
-    const { state, saveCreds } = await useMultiFileAuthState(global.authFile)
-    const { version } = await fetchLatestBaileysVersion()
+async function startLegamBot() {
+    console.clear()
+    console.log(`
+    ⊹ ࣪ ˖ ✦ ━━ 𝐋𝐄𝐆𝐀𝐌 𝐂𝐎𝐑𝐄 𝐎𝐒 ━━ ✦ ˖ ࣪ ⊹
+    👑 Inizializzazione Motore Principale...
+    👤 Owner: ${global.ownerName}
+    🛡️ Sistema Anti-Crash: [ATTIVO]
+    `)
 
-    let usePairingCode = false;
-    let phoneNumber = '';
-    
-    // --- 1. RICHIESTA NUMERO ---
-    if (!fs.existsSync(`./${global.authFile}/creds.json`)) {
-        console.log('\n=======================================')
-        const answer = await question('Vuoi usare il CODICE a 8 cifre per collegarti? (si/no): ')
-        if (answer.toLowerCase().startsWith('s')) {
-            usePairingCode = true;
-            console.log('\n⚠️ IMPORTANTE: Inserisci il numero senza il + (es. 2250508616860)')
-            phoneNumber = await question('Inserisci il tuo numero di WhatsApp: ')
-            phoneNumber = phoneNumber.replace(/[^0-9]/g, '') 
-        }
-        console.log('=======================================\n')
-    }
+    // Gestione della cartella di sessione
+    const { state, saveCreds } = await useMultiFileAuthState(global.sessionName)
+    const { version, isLatest } = await fetchLatestBaileysVersion()
 
-    // --- 2. CONNESSIONE (MARCHIO LEGAM BOT) ---
+    console.log(`    📡 Versione WA: ${version.join('.')} (Aggiornata: ${isLatest})`)
+
+    // CONNESSIONE PURA A WHATSAPP
     const conn = makeWASocket({
         version,
-        auth: state,
-        printQRInTerminal: !usePairingCode,
-        logger: pino({ level: 'silent' }),
-        // ECCO LA TUA IDENTITÀ ASSOLUTA
-        browser: ['Legam Bot', 'Chrome', '3.0'],
-        syncFullHistory: false, // Salva la RAM del tuo telefono
-        generateHighQualityLinkPreview: false
+        logger: pino({ level: 'silent' }), // Spegne i log fastidiosi e inutili
+        printQRInTerminal: false, // Disattiviamo il QR Code per usare il Pairing Code
+        auth: {
+            creds: state.creds,
+            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
+        },
+        browser: Browsers.ubuntu('Chrome'), // Simula un browser su Linux
+        generateHighQualityLinkPreview: true,
+        getMessage: async (key) => { return { conversation: 'Legam Bot Reconnect' } }
     })
 
-    // --- 3. GENERAZIONE PAIRING CODE ---
-    if (usePairingCode && !conn.authState.creds.registered) {
-        console.log("⏳ Legam Bot sta richiedendo l'accesso ai server Meta...")
+    // ⚡ SISTEMA DI PAIRING CODE (Se non c'è una sessione salvata)
+    if (!conn.authState.creds.registered) {
+        console.log(`\n    [!] NESSUNA CONNESSIONE TROVATA. AVVIO PROTOCOLLO DI COLLEGAMENTO.`)
+        let numero = await question('    📱 Inserisci il numero del Bot (es. 393471234567): ')
+        numero = numero.replace(/[^0-9]/g, '')
         
-        setTimeout(async () => {
-            try {
-                let code = await conn.requestPairingCode(phoneNumber)
-                let formattedCode = code?.match(/.{1,4}/g)?.join('-').toUpperCase() || code.toUpperCase()
-                
-                console.log(`\n🎯 IL TUO CODICE LEGAM BOT È: \x1b[32m${formattedCode}\x1b[0m\n`)
-                console.log('📱 Vai su WhatsApp -> Dispositivi Collegati -> Collega con il numero di telefono\n')
-            } catch (e) {
-                console.error("\n❌ Errore nella generazione. Assicurati che il numero sia corretto e non sia in cooldown.\n", e)
+        // Aspetta un secondo per stabilizzare
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        let codice = await conn.requestPairingCode(numero)
+        codice = codice?.match(/.{1,4}/g)?.join("-") || codice
+        
+        console.log(`\n    🔑 IL TUO CODICE SEGRETO: \x1b[32m${codice}\x1b[0m`)
+        console.log(`    Vai su WhatsApp -> Dispositivi Collegati -> Collega con numero di telefono.\n`)
+    }
+
+    // 🔄 GESTIONE CONNESSIONE E RIAVVII
+    conn.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect } = update
+
+        if (connection === 'close') {
+            const reason = new Boom(lastDisconnect?.error)?.output?.statusCode
+            console.log(`\n    [⚠️] Connessione interrotta. Codice: ${reason}`)
+            
+            if (reason === DisconnectReason.badSession) {
+                console.log(`    [❌] Sessione corrotta. Elimina la cartella "${global.sessionName}" e riavvia.`)
+            } else if (reason === DisconnectReason.connectionClosed || reason === DisconnectReason.connectionLost || reason === DisconnectReason.timedOut) {
+                console.log('    [🔄] Riconnessione al server in corso...')
+                startLegamBot() // Riavvia in automatico
+            } else if (reason === DisconnectReason.loggedOut) {
+                console.log(`    [❌] Disconnesso dal telefono. Elimina "${global.sessionName}" e ricollega.`)
+                process.exit(1)
+            } else {
+                console.log('    [🔄] Riavvio generico...')
+                startLegamBot()
             }
-        }, 3000) 
-    }
-
-    // --- 4. CARICAMENTO PLUGIN ---
-    global.plugins = {}
-    const pluginsFolder = path.join(__dirname, 'plugins')
-    if (!fs.existsSync(pluginsFolder)) fs.mkdirSync(pluginsFolder)
-    
-    const files = fs.readdirSync(pluginsFolder).filter(f => f.endsWith('.js'))
-    for (const file of files) {
-        try {
-            const filePath = pathToFileURL(path.join(pluginsFolder, file)).href
-            const module = await import(filePath)
-            global.plugins[file] = module.default || module
-        } catch (e) {
-            console.error(`❌ Errore nel plugin ${file}:`, e)
+        } else if (connection === 'open') {
+            console.log(`\n    [✅] LEGAM BOT È ONLINE E CONNESSO AL SERVER WHATSAPP.\n    [👑] In attesa di comandi...`)
         }
-    }
-    console.log(`📌 Caricati ${files.length} plugins con successo.`)
+    })
 
-    // --- 5. GESTIONE EVENTI (Anti-Crash per Termux) ---
+    // Salva le credenziali automaticamente quando cambiano
     conn.ev.on('creds.update', saveCreds)
 
-    conn.ev.on('connection.update', (up) => {
-        const { connection, lastDisconnect } = up
-        if (connection === 'open') {
-            console.log(`\n🚀 LEGAM BOT È ONLINE E PRONTO A DOMINARE!\n`)
-        }
-        if (connection === 'close') {
-             console.log(`\n❌ Connessione caduta. Legam Bot si sta riavviando per non perdere la sessione...`)
-             startBot() // Auto-riavvio vitale su telefono
-        }
-    })
+    // ====================================================
+    // 🧠 COLLEGAMENTO AL CERVELLO (handler.js)
+    // ====================================================
+    // Qui il based.js passa la palla al file handler.js che gestisce tutti i plugin
+    
+    // Assicurati che il file handler.js sia importato correttamente (se la tua repo usa handler.js)
+    try {
+        const handler = await import('./handler.js')
+        
+        // Intercetta i messaggi in arrivo e li manda all'handler
+        conn.ev.on('messages.upsert', async (m) => {
+            if (!m.messages) return
+            const msg = m.messages[0]
+            if (!msg.message) return
+            
+            // Passiamo il messaggio al file handler.js (che leggerà i plugin)
+            if (handler.handler) await handler.handler(conn, m)
+        })
 
-    conn.ev.on('messages.upsert', async chatUpdate => {
-        await handler(chatUpdate, conn)
-    })
+        // Intercetta l'entrata e l'uscita delle persone nei gruppi (per plugin di benvenuto ecc)
+        conn.ev.on('group-participants.update', async (update) => {
+            if (handler.participantsUpdate) await handler.participantsUpdate(conn, update)
+        })
+        
+    } catch (e) {
+        console.log(`    [⚠️] Impossibile caricare handler.js: Verifica che esista nella directory principale.`)
+        console.error(e)
+    }
+
+    return conn
 }
 
-startBot()
+// Lancia il sistema
+startLegamBot()
+
