@@ -1,106 +1,160 @@
-import './config.js'
-import fs from 'fs'
-import path from 'path'
+import { smsg } from './lib/simple.js'
+import { format } from 'util'
 import { fileURLToPath } from 'url'
+import path, { join } from 'path'
+import { unwatchFile, watchFile } from 'fs'
 import chalk from 'chalk'
+import NodeCache from 'node-cache'
+import { getAggregateVotesInPollMessage, toJid } from '@whiskeysockets/baileys'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const pluginFolder = path.join(__dirname, 'plugin')
+global.ignoredUsersGlobal = new Set()
+global.ignoredUsersGroup = {}
+global.groupSpam = {}
 
-// Caricamento Dinamico Plugin
-global.plugins = {}
-let files = fs.readdirSync(pluginFolder).filter(f => f.endsWith('.js'))
-for (let file of files) {
-    try {
-        let plugin = await import(`./plugin/${file}?u=${Date.now()}`)
-        global.plugins[file] = plugin.default || plugin
-    } catch (e) {
-        console.error(`Errore caricamento ${file}:`, e)
+if (!global.groupCache) {
+    global.groupCache = new NodeCache({ stdTTL: 5 * 60, useClones: false })
+}
+if (!global.jidCache) {
+    global.jidCache = new NodeCache({ stdTTL: 600, useClones: false })
+}
+if (!global.nameCache) {
+    global.nameCache = new NodeCache({ stdTTL: 600, useClones: false });
+}
+
+export const fetchMetadata = async (conn, chatId) => await conn.groupMetadata(chatId)
+
+const fetchGroupMetadataWithRetry = async (conn, chatId, retries = 3, delay = 1000) => {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await conn.groupMetadata(chatId);
+        } catch (e) {
+            if (i === retries - 1) throw e;
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
     }
 }
 
+const isNumber = x => typeof x === 'number' && !isNaN(x)
+const delay = ms => isNumber(ms) && new Promise(resolve => setTimeout(resolve, ms))
+
 export async function handler(chatUpdate) {
-    if (!chatUpdate.messages) return
-    let m = chatUpdate.messages[0]
-    if (!m.message || m.key.remoteJid === 'status@broadcast') return
+    this.msgqueque = this.msgqueque || []
+    this.uptime = this.uptime || Date.now()
+    if (!chatUpdate) return
+    
+    let m = chatUpdate.messages[chatUpdate.messages.length - 1]
+    if (!m) return
+    
+    // Gestione messaggi modificati
+    if (m.message?.protocolMessage?.type === 'MESSAGE_EDIT') {
+        const key = m.message.protocolMessage.key;
+        const editedMessage = m.message.protocolMessage.editedMessage;
+        m.key = key;
+        m.message = editedMessage;
+        m.text = editedMessage.conversation || editedMessage.extendedTextMessage?.text || '';
+        m.mtype = Object.keys(editedMessage)[0];
+    }
 
-    // SERIALIZZAZIONE MESSAGGIO (smsg)
+    // Serializzazione fondamentale (senza questa il bot muore)
     try {
-        const type = Object.keys(m.message)[0]
-        m.text = m.message.conversation || m.message[type]?.text || m.message[type]?.caption || ''
-        m.sender = m.key.participant || m.key.remoteJid
-        m.chat = m.key.remoteJid
-        m.isGroup = m.chat.endsWith('@g.us')
-        m.reply = (text) => this.sendMessage(m.chat, { text }, { quoted: m })
+        m = smsg(this, m, global.store)
+    } catch (e) {
+        return
+    }
 
-        // DATABASE CHECK
-        if (!global.db.data) await global.loadDatabase()
-        let user = global.db.data.users[m.sender]
-        if (!user) user = global.db.data.users[m.sender] = { exp: 0, euro: 10, limit: 20, registered: false, banned: false }
-        
-        let chat = global.db.data.chats[m.chat]
-        if (!chat) chat = global.db.data.chats[m.chat] = { isBanned: false, welcome: false, antilink: false }
+    if (!m || !m.key || !m.chat || !m.sender) return
+    if (m.fromMe) return
 
-        // PERMESSI
-        let isOwner = global.owner.some(o => m.sender.includes(o[0])) || m.key.fromMe
-        let isPrems = isOwner || global.prems.some(p => m.sender.includes(p))
-        let isAdmin = false, isBotAdmin = false
-        if (m.isGroup) {
-            let metadata = await this.groupMetadata(m.chat).catch(() => null)
-            if (metadata) {
-                let botId = this.user.id.split(':')[0] + '@s.whatsapp.net'
-                isAdmin = metadata.participants.some(p => p.id === m.sender && p.admin)
-                isBotAdmin = metadata.participants.some(p => p.id === botId && p.admin)
-            }
+    // DATABASE LOADING
+    if (!global.db.data) await global.loadDatabase()
+    
+    // Inizializzazione Utente
+    let user = global.db.data.users[m.sender]
+    if (!user) {
+        user = global.db.data.users[m.sender] = {
+            exp: 0, euro: 10, muto: false, registered: false,
+            name: m.pushName || 'Utente', banned: false, level: 0
         }
+    }
 
-        // COMANDI
-        if (!global.prefix.test(m.text)) {
-            // Logica per messaggi normali (guadagno exp)
-            user.exp += 1
-            return
+    // Inizializzazione Chat
+    let chat = global.db.data.chats[m.chat]
+    if (!chat) {
+        chat = global.db.data.chats[m.chat] = {
+            isBanned: false, welcome: false, antilink: false, reaction: false
         }
+    }
 
-        let usedPrefix = m.text.match(global.prefix)[0]
+    // PERMESSI (Owner, Admin, ecc)
+    let isOwner = global.owner.some(([num]) => num + '@s.whatsapp.net' === m.sender) || m.fromMe
+    let isPrems = isOwner || (global.prems && global.prems.includes(m.sender))
+    
+    let isAdmin = false, isBotAdmin = false
+    if (m.isGroup) {
+        let metadata = global.groupCache.get(m.chat) || await fetchMetadata(this, m.chat).catch(() => null)
+        if (metadata) {
+            global.groupCache.set(m.chat, metadata)
+            let participants = metadata.participants
+            isAdmin = participants.some(p => p.id === m.sender && (p.admin === 'admin' || p.admin === 'superadmin'))
+            isBotAdmin = participants.some(p => p.id === (this.user.id.split(':')[0] + '@s.whatsapp.net') && (p.admin === 'admin' || p.admin === 'superadmin'))
+        }
+    }
+
+    // ESECUZIONE PLUGIN
+    const ___dirname = join(path.dirname(fileURLToPath(import.meta.url)), './plugins')
+    
+    // Controllo Prefissi
+    let usedPrefix
+    let _prefix = global.prefix || /^[.!]/i
+    let isCmd = _prefix.test(m.text)
+    
+    if (isCmd) {
+        usedPrefix = m.text.match(_prefix)[0]
         let noPrefix = m.text.replace(usedPrefix, '').trim()
-        let args = noPrefix.split(/\s+/).slice(1)
-        let command = noPrefix.split(/\s+/)[0].toLowerCase()
+        let [command, ...args] = noPrefix.split(/\s+/).filter(v => v)
+        command = command?.toLowerCase()
 
         for (let name in global.plugins) {
             let plugin = global.plugins[name]
-            if (!plugin.command) continue
-            let isMatch = Array.isArray(plugin.command) ? plugin.command.includes(command) : plugin.command === command
+            if (!plugin) continue
             
-            if (isMatch) {
-                // CONTROLLI DI SICUREZZA (DFAIL)
+            let isAccept = Array.isArray(plugin.command) ? plugin.command.includes(command) : plugin.command === command
+            
+            if (isAccept) {
+                // Check dei permessi Axion-style
                 if (plugin.owner && !isOwner) return global.dfail('owner', m, this)
-                if (plugin.rowner && !isOwner) return global.dfail('rowner', m, this)
                 if (plugin.group && !m.isGroup) return global.dfail('group', m, this)
                 if (plugin.admin && !isAdmin && !isOwner) return global.dfail('admin', m, this)
                 if (plugin.botAdmin && !isBotAdmin) return global.dfail('botAdmin', m, this)
-                if (plugin.premium && !isPrems) return global.dfail('premium', m, this)
 
                 try {
                     await plugin.call(this, m, {
-                        conn: this,
-                        args,
-                        text: args.join(' '),
-                        command,
-                        usedPrefix,
-                        isOwner,
-                        isAdmin,
-                        isBotAdmin
+                        conn: this, args, text: args.join(' '), command, usedPrefix,
+                        isOwner, isAdmin, isBotAdmin, isPrems
                     })
                 } catch (e) {
                     console.error(e)
-                    m.reply('『 ⚠️ 』 `Errore nell\'esecuzione del comando.`')
                 }
                 break
             }
         }
-
-    } catch (e) {
-        console.error(e)
     }
 }
+
+global.dfail = async (type, m, conn) => {
+    const msg = {
+        rowner: '『 👑 』 *OWNER ONLY*\nComando riservato al creatore.',
+        owner: '『 🛡️ 』 *ACCESS DENIED*\nSolo Giuse può farlo.',
+        group: '『 👥 』 *GROUP ONLY*\nUsa questo comando nei gruppi.',
+        admin: '『 🛠️ 』 *ADMIN ONLY*\nDevi essere amministratore.',
+        botAdmin: '『 🤖 』 *BOT NOT ADMIN*\nFammi admin per favore.'
+    }[type]
+    if (msg) return m.reply(msg)
+}
+
+let file = fileURLToPath(import.meta.url)
+watchFile(file, () => {
+    unwatchFile(file)
+    console.log(chalk.bgHex('#3b0d95')(chalk.white.bold("File: 'handler.js' Aggiornato")))
+})
 
