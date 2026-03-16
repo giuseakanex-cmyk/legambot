@@ -1,6 +1,6 @@
 // Plugin fatto da giuse
 
-import os from '';
+import os from 'os';
 import { performance } from 'perf_hooks';
 
 let handler = async (m, { conn, usedPrefix }) => {
