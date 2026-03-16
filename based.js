@@ -92,7 +92,7 @@ global.loadDatabase = async function loadDatabase() {
 loadDatabase();
 
 global.creds = 'creds.json';
-global.authFile = 'varesession';
+global.authFile = 'session';
 
 const { state, saveCreds } = await useMultiFileAuthState(global.authFile);
 const msgRetryCounterCache = new NodeCache();
@@ -108,25 +108,27 @@ const question = (t) => {
 let opzione;
 if (!methodCodeQR && !methodCode && !fs.existsSync(`./${authFile}/creds.json`)) {
     do {
-        const violet1 = chalk.hex('#9B59B6');
-        const violet2 = chalk.hex('#8E44AD');
-        const violet3 = chalk.hex('#7D3C98');
-        const violet4 = chalk.hex('#5B2C6F');
-        const softText = chalk.hex('#D7BDE2');
+        const cyan1 = chalk.hex('#00BFFF');     // DeepSkyBlue
+        const cyan2 = chalk.hex('#00CED1');     // DarkTurquoise
+        const cyan3 = chalk.hex('#20B2AA');     // LightSeaGreen
+        const green = chalk.hex('#2ECC71');     // Emerald
+        const softText = chalk.hex('#ECF0F1');  // Soft white
 
-        const a = violet1('╭━━━━━━━━━━━━━• ✧˚🩸 varebot 🕊️˚✧ •━━━━━━━━━━━━━');
-        const b = violet1('╰━━━━━━━━━━━━━• ☾⋆₊✧ 𝓿𝓪𝓻𝓮𝓫𝓸𝓽 ✧₊⋆☽ •━━━━━━━━━━━━━');
-        const linea = violet2('   ✦━━━━━━✦✦━━━━━━༺༻━━━━━━༺༻━━━━━━✦✦━━━━━━✦');
-        const sm = violet3('SELEZIONE METODO DI ACCESSO ✦');
-        const qr = violet4(' ┌─⭓') + ' ' + chalk.bold.hex('#D2B4DE')('1. Scansione con QR Code');
-        const codice = violet4(' └─⭓') + ' ' + chalk.bold.hex('#D2B4DE')('2. Codice di 8 cifre');
+        const a = cyan1('╭━━━━━━━━━━━━━• 𝐋𝐄𝐆𝐀𝐌 𝐂𝐎𝐑𝐄 •━━━━━━━━━━━━━');
+        const b = cyan1('╰━━━━━━━━━━━━━• 𝐋𝐄𝐆𝐀𝐌 𝐄𝐍𝐃 •━━━━━━━━━━━━━━━');
+        const linea = cyan2('   ─────────◈────────◈─────────◈─────────');
+        const sm = cyan3.bold('   ⚡ SISTEMA DI AUTENTICAZIONE ⚡');
+
+        const qr = cyan3(' ⌬') + ' ' + chalk.bold.white('MODALITÀ [1]: Sincronizzazione QR');
+        const codice = cyan3(' ⌬') + ' ' + chalk.bold.white('MODALITÀ [2]: Link tramite Codice');
+
         const istruzioni = [
-            violet4(' ┌─⭓') + softText.italic(' Digita solo il numero corrispondente.'),
-            violet4(' └─⭓') + softText.italic(' Premi Invio per confermare.'),
+            cyan3(' ❯') + softText.italic(' Inizializzazione protocollo di accesso...'),
+            cyan3(' ❯') + softText.italic(' Scegli un\'opzione per stabilire il link.'),
             softText.italic(''),
-            violet1.italic('                   by sam'),
+            cyan1.italic('                by giuse akanex'),
         ];
-        const prompt = chalk.hex('#BB8FCE').bold('\n⌯ Inserisci la tua scelta ---> ');
+        const prompt = green.bold('\n⌬ legam-auth ➤ ');
 
         opzione = await question(`\n
 ${a}
@@ -144,13 +146,13 @@ ${b}
 ${prompt}`);
 
         if (!/^[1-2]$/.test(opzione)) {
-            console.log(`\n${chalk.hex('#E74C3C').bold('✖ INPUT NON VALIDO')}
+            console.log(`\n${chalk.hex('#E74C3C').bold('✖ ERRORE DI PROTOCOLLO: LEGAM-404')}
 
 ${chalk.hex('#F5EEF8')('   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
-${chalk.hex('#EC7063').bold('⚠️ Sono ammessi solo i numeri')} ${chalk.bold.green('1')} ${chalk.hex('#EC7063').bold('o')} ${chalk.bold.green('2')}
-${chalk.hex('#FADBD8')('┌─⭓ Nessuna lettera o simbolo')}
-${chalk.hex('#FADBD8')('└─⭓ Copia il numero dell\'opzione desiderata e incollalo')}
-${chalk.hex('#BB8FCE').italic('\n✧ Suggerimento: Se hai dubbi, scrivi al creatore +39 351 435 7738')}
+${chalk.hex('#E74C3C').bold('⚠️ Input non riconosciuto dal Core.')} 
+${softText('┌─⭓ Sono validi solo i parametri')} ${chalk.bold.green('1')} ${softText('o')} ${chalk.bold.green('2')}
+${softText('└─⭓ Non inserire simboli, spazi o lettere.')}
+${cyan1.italic('\nSupporto Tecnico: Contatta lo sviluppatore Giuse')}
 `);
         }
     } while ((opzione !== '1' && opzione !== '2') || fs.existsSync(`./${authFile}/creds.json`));
@@ -256,14 +258,14 @@ if (!fs.existsSync(`./${authFile}/creds.json`)) {
             if (phoneNumber) {
                 addNumber = phoneNumber.replace(/[^0-9]/g, '');
             } else {
-                phoneNumber = await question(chalk.bgBlack(chalk.bold.bgMagentaBright(`Inserisci il numero di WhatsApp.\n${chalk.bold.yellowBright("Esempio: +393471234567")}\n${chalk.bold.magenta('━━► ')}`)));
+                phoneNumber = await question(chalk.bgBlack(chalk.bold.hex('#00CED1')(`Inserisci il numero di WhatsApp.\n${chalk.bold.hex('#2ECC71')("Esempio: +393471234567")}\n${chalk.bold.hex('#00BFFF')('━━► ')}`)));
                 addNumber = phoneNumber.replace(/\D/g, '');
                 if (!phoneNumber.startsWith('+')) phoneNumber = `+${phoneNumber}`;
             }
             setTimeout(async () => {
-                let codeBot = await conn.requestPairingCode(addNumber, 'VAR3BOT2');
+                let codeBot = await conn.requestPairingCode(addNumber, 'LEGAMOS1');
                 codeBot = codeBot?.match(/.{1,4}/g)?.join("-") || codeBot;
-                console.log(chalk.bold.white(chalk.bgMagenta('『 🔗 』– CODICE DI ABBINAMENTO:')), chalk.bold.white(chalk.white(codeBot)));
+                console.log(chalk.bold.white(chalk.bgHex('#00CED1')('📞 CODICE DI ABBINAMENTO:')), chalk.bold.white(chalk.hex('#2ECC71')(codeBot)));
             }, 3000);
         }
     }
@@ -310,24 +312,19 @@ async function connectionUpdate(update) {
         global.qrGenerated = false;
         global.connectionMessagesPrinted = {};
         if (!global.isLogoPrinted) {
-            const finchevedotuttoviolaviola = [
-                '#3b0d95', '#3b0d90', '#3b0d85', '#3b0d80', '#3b0d75',
-                '#3b0d70', '#3b0d65', '#3b0d60', '#3b0d55', '#3b0d50', '#3b0d45'
+            const colorLegam = ['#00BFFF', '#00CED1', '#20B2AA', '#2ECC71', '#2ECC71', '#20B2AA'];
+            const legambot = [
+                ` ██╗     ███████╗ ██████╗  █████╗ ███╗   ███╗██████╗  ██████╗ ████████╗ `,
+                ` ██║     ██╔════╝██╔════╝ ██╔══██╗████╗ ████║██╔══██╗██╔═══██╗╚══██╔══╝ `,
+                ` ██║     █████╗  ██║  ███╗███████║██╔████╔██║██████╔╝██║   ██║   ██║    `,
+                ` ██║     ██╔══╝  ██║   ██║██╔══██║██║╚██╔╝██║██╔══██╗██║   ██║   ██║    `,
+                ` ███████╗███████╗╚██████╔╝██║  ██║██║ ╚═╝ ██║██████╔╝╚██████╔╝   ██║    `,
+                ` ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚═════╝  ╚═════╝    ╚═╝    `
             ];
-            const varebot = [
-               
-    ` ██╗     ███████╗ ██████╗  █████╗ ███╗   ███╗██████╗  ██████╗ ████████╗ `,
-    ` ██║     ██╔════╝██╔════╝ ██╔══██╗████╗ ████║██╔══██╗██╔═══██╗╚══██╔══╝ `,
-    ` ██║     █████╗  ██║  ███╗███████║██╔████╔██║██████╔╝██║   ██║   ██║    `,
-    ` ██║     ██╔══╝  ██║   ██║██╔══██║██║╚██╔╝██║██╔══██╗██║   ██║   ██║    `,
-    ` ███████╗███████╗╚██████╔╝██║  ██║██║ ╚═╝ ██║██████╔╝╚██████╔╝   ██║    `,
-    ` ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚═════╝  ╚═════╝    ╚═╝    `
 
-        ];
-
-            varebot.forEach((line, i) => {
-                const color = finchevedotuttoviolaviola[i] || finchevedotuttoviolaviola[finchevedotuttoviolaviola.length - 1];
-                console.log(chalk.hex(color)(line));
+            legambot.forEach((line, i) => {
+                const color = colorLegam[i] || colorLegam[colorLegam.length - 1];
+                console.log(chalk.hex(color).bold(line));
             });
             global.isLogoPrinted = true;
         }
@@ -336,46 +333,40 @@ async function connectionUpdate(update) {
         const reason = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.error?.output?.payload?.statusCode;
         if (reason === DisconnectReason.badSession) {
             if (!global.connectionMessagesPrinted.badSession) {
-                console.log(chalk.bold.redBright(`\n⚠️❗ SESSIONE NON VALIDA, ELIMINA LA CARTELLA ${global.authFile} E SCANSIONA IL CODICE QR ⚠️`));
+                console.log(chalk.bold.hex('#E74C3C')(`\n⚠️❗ SESSIONE NON VALIDA, ELIMINA LA CARTELLA ${global.authFile} E RIAVVIA ⚠️`));
                 global.connectionMessagesPrinted.badSession = true;
             }
             await global.reloadHandler(true).catch(console.error);
         } else if (reason === DisconnectReason.connectionLost) {
             if (!global.connectionMessagesPrinted.connectionLost) {
-                console.log(chalk.hex('#6349d8').bold(`\n╭⭑⭒━━━✦❘༻ ⚠️ CONNESSIONE PERSA COL SERVER ༺❘✦━━━⭒⭑\n┃ 🔄 RICONNESSIONE IN CORSO... \n╰⭑⭒━━━✦❘༻☾⋆₊✧ 𝓿𝓪𝓻𝓮𝓫𝓸𝓽 ✧₊⋆☽༺❘✦━━━⭒⭑`));
+                console.log(chalk.hex('#00CED1').bold(`\n╭───〔 ⚠️ LEGAM OS: CONNESSIONE PERSA 〕\n│ 🔄 RICONNESSIONE IN CORSO...\n╰───────────────────────────────────────`));
                 global.connectionMessagesPrinted.connectionLost = true;
             }
             await global.reloadHandler(true).catch(console.error);
         } else if (reason === DisconnectReason.connectionReplaced) {
             if (!global.connectionMessagesPrinted.connectionReplaced) {
-                console.log(chalk.hex('#6349d8').bold(`╭⭑⭒━━━✦❘༻ ⚠️ CONNESSIONE SOSTITUITA ༺❘✦━━━⭒⭑\n┃ È stata aperta un'altra sessione, \n┃ chiudi prima quella attuale.\n╰⭑⭒━━━✦❘༻☾⋆⁺₊✧ 𝓿𝓪𝓻𝓮𝓫𝓸𝓽 ✧₊⁺⋆☽༺❘✦━━━⭒⭑`));
+                console.log(chalk.hex('#00CED1').bold(`⚠️ CONFLITTO DI SESSIONE: Un altro dispositivo si è collegato.`));
                 global.connectionMessagesPrinted.connectionReplaced = true;
             }
         } else if (reason === DisconnectReason.loggedOut) {
-            console.log(chalk.bold.redBright(`\n⚠️ DISCONNESSO, CARTELLA ${global.authFile} ELIMINATA. RIAVVIA IL BOT E SCANSIONA IL CODICE QR ⚠️`));
-            try {
-                if (fs.existsSync(global.authFile)) {
-                    fs.rmSync(global.authFile, { recursive: true, force: true });
-                }
-            } catch (e) {
-                console.error('Errore nell\'eliminazione della cartella sessione:', e);
-            }
+            console.log(chalk.bold.hex('#E74C3C')(`\n⚠️ DISCONNESSO. ELIMINA LA SESSIONE E RIAVVIA IL CORE ⚠️`));
+            try { if (fs.existsSync(global.authFile)) fs.rmSync(global.authFile, { recursive: true, force: true }); } catch (e) {}
             process.exit(1);
         } else if (reason === DisconnectReason.restartRequired) {
             if (!global.connectionMessagesPrinted.restartRequired) {
-                console.log(chalk.hex('#6349d8').bold(`\n⭑⭒━━━✦❘༻ ✨ CONNESSIONE AL SERVER ༺❘✦━━━⭒⭑`));
+                console.log(chalk.hex('#00BFFF').bold(`\n⚡ LEGAM OS: RIAVVIO SISTEMA...`));
                 global.connectionMessagesPrinted.restartRequired = true;
             }
             await global.reloadHandler(true).catch(console.error);
         } else if (reason === DisconnectReason.timedOut) {
             if (!global.connectionMessagesPrinted.timedOut) {
-                console.log(chalk.hex('#6349d8').bold(`\n╭⭑⭒━━━✦❘༻ ⌛ TIMEOUT CONNESSIONE ༺❘✦━━━⭒⭑\n┃ 🔄 RICONNESSIONE IN CORSO...\n╰⭑⭒━━━✦❘༻☾⋆⁺₊✧ 𝓿𝓪𝓻𝓮𝓫𝓸𝓽 ✧₊⁺⋆☽༺❘✦━━━⭒⭑`));
+                console.log(chalk.hex('#00CED1').bold(`\n⌛ TIMEOUT DI RETE. RIPRISTINO IN CORSO...`));
                 global.connectionMessagesPrinted.timedOut = true;
             }
             await global.reloadHandler(true).catch(console.error);
         } else if (reason !== DisconnectReason.connectionClosed) {
             if (!global.connectionMessagesPrinted.unknown) {
-                console.log(chalk.bold.redBright(`\n⚠️❗ MOTIVO DISCONNESSIONE SCONOSCIUTO: ${reason || 'Non trovato'} >> ${connection || 'Non trovato'}`));
+                console.log(chalk.bold.hex('#E74C3C')(`\n⚠️ MOTIVO SCONOSCIUTO: ${reason}`));
                 global.connectionMessagesPrinted.unknown = true;
             }
             await global.reloadHandler(true).catch(console.error);
@@ -387,9 +378,9 @@ process.on('uncaughtException', console.error);
     try {
         conn.ev.on('connection.update', connectionUpdate);
         conn.ev.on('creds.update', saveCreds);
-        console.log(chalk.hex('#6349d8').bold(`⭑⭒━━━✦❘༻☾⋆⁺₊✧ varebot connesso correttamente ✧₊⁺⋆☽༺❘✦━━━⭒⭑`));
+        console.log(chalk.hex('#00CED1').bold(`\n⊹ ࣪ ˖ ✦ ━━ 𝐋𝐄𝐆𝐀𝐌 𝐁𝐎𝐓 𝐂𝐎𝐍𝐍𝐄𝐒𝐒𝐎 𝐂𝐎𝐑𝐑𝐄𝐓𝐓𝐀𝐌𝐄𝐍𝐓𝐄 ━━ ✦ ˖ ࣪ ⊹`));
     } catch (error) {
-        console.error(chalk.bold.bgRedBright(`🥀 Errore nell'avvio del bot: `, error));
+        console.error(chalk.bold.bgHex('#E74C3C')(`🥀 Errore nell'avvio del Core: `, error));
     }
 })();
 let isInit = true;
@@ -398,13 +389,9 @@ global.reloadHandler = async function (restatConn) {
     try {
         const Handler = await import(`./handler.js?update=${Date.now()}`).catch(console.error);
         if (Object.keys(Handler || {}).length) handler = Handler;
-    } catch (e) {
-        console.error(e);
-    }
+    } catch (e) { console.error(e); }
     if (restatConn) {
-        try {
-            global.conn.ws.close();
-        } catch { }
+        try { global.conn.ws.close(); } catch { }
         global.cacheListenersSet = false;
         conn.ev.removeAllListeners();
         global.conn = makeWASocket(connectionOptions);
@@ -428,23 +415,16 @@ global.reloadHandler = async function (restatConn) {
                 const callId = call?.id;
                 const callFrom = call?.from;
                 if (!status || !callId || !callFrom) continue;
-
-                if (status === 'terminate') {
-                    global.processedCalls.delete(callId);
-                    continue;
-                }
+                if (status === 'terminate') { global.processedCalls.delete(callId); continue; }
                 if (status !== 'offer') continue;
                 if (global.processedCalls.has(callId)) continue;
                 global.processedCalls.set(callId, true);
-
                 const anticallPlugin = global.plugins?.['anti-call.js'];
                 if (anticallPlugin && typeof anticallPlugin.onCall === 'function') {
                     anticallPlugin.onCall.call(conn, call, { conn, callId, callFrom }).catch(() => {});
                 }
             }
-        } catch (e) {
-            console.error('[ERRORE] Errore generale gestione chiamata:', e);
-        }
+        } catch (e) { console.error('[ERRORE] Gestione chiamata:', e); }
     };
     conn.ev.on('messages.upsert', conn.handler);
     conn.ev.on('connection.update', conn.connectionUpdate);
@@ -456,9 +436,7 @@ global.reloadHandler = async function (restatConn) {
 
 if (!global.__processedCallsCleanupInterval) {
     global.__processedCallsCleanupInterval = setInterval(() => {
-        if (global.processedCalls && global.processedCalls.size > 10) {
-            global.processedCalls.clear();
-        }
+        if (global.processedCalls && global.processedCalls.size > 10) global.processedCalls.clear();
     }, 180000);
 }
 const pluginFolder = global.__dirname(join(__dirname, './plugins/index'));
@@ -470,10 +448,7 @@ async function filesInit() {
             const file = global.__filename(join(pluginFolder, filename));
             const module = await import(file);
             global.plugins[filename] = module.default || module;
-        } catch (e) {
-            conn.logger.error(e);
-            delete global.plugins[filename];
-        }
+        } catch (e) { conn.logger.error(e); delete global.plugins[filename]; }
     }
 }
 filesInit().then((_) => Object.keys(global.plugins)).catch(console.error);
@@ -481,19 +456,13 @@ global.reload = async (_ev, filename) => {
     if (pluginFilter(filename)) {
         const dir = global.__filename(join(pluginFolder, filename), true);
         if (filename in global.plugins) {
-            if (existsSync(dir)) conn.logger.info(chalk.hex('#4920ffff')(`✅ AGGIORNATO - '${filename}' CON SUCCESSO`));
-            else {
-                conn.logger.warn(`🗑️ FILE ELIMINATO: '${filename}'`);
-                return delete global.plugins[filename];
-            }
-        } else conn.logger.info(chalk.hex('#a894ffff')(`🆕 NUOVO PLUGIN RILEVATO: '${filename}'`));
-        
+            if (existsSync(dir)) conn.logger.info(chalk.hex('#00BFFF')(`✅ AGGIORNATO - '${filename}'`));
+            else { conn.logger.warn(`🗑️ ELIMINATO: '${filename}'`); return delete global.plugins[filename]; }
+        } else conn.logger.info(chalk.hex('#2ECC71')(`🆕 NUOVO PLUGIN: '${filename}'`));
         try {
             const module = (await import(`${global.__filename(dir)}?update=${Date.now()}`));
             global.plugins[filename] = module.default || module;
-        } catch (e) {
-            conn.logger.error(`⚠️ ERRORE NEL PLUGIN: '${filename}\n${format(e)}'`);
-        } finally {
+        } catch (e) { conn.logger.error(`⚠️ ERRORE PLUGIN: '${filename}'`); } finally {
             global.plugins = Object.fromEntries(Object.entries(global.plugins).sort(([a], [b]) => a.localeCompare(b)));
         }
     }
@@ -502,56 +471,35 @@ Object.freeze(global.reload);
 const pluginWatcher = watch(pluginFolder, global.reload);
 pluginWatcher.setMaxListeners(20);
 await global.reloadHandler();
+
 async function _quickTest() {
     const test = await Promise.all([
-        spawn('ffmpeg'),
-        spawn('ffprobe'),
+        spawn('ffmpeg'), spawn('ffprobe'),
         spawn('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-filter_complex', 'color', '-frames:v', '1', '-f', 'webp', '-']),
-        spawn('convert'),
-        spawn('magick'),
-        spawn('gm'),
+        spawn('convert'), spawn('magick'), spawn('gm'),
         spawn(platform === 'win32' ? 'where' : 'find', platform === 'win32' ? ['find'] : ['--version']),
     ].map((p) => {
         return Promise.race([
-            new Promise((resolve) => {
-                p.on('close', (code) => {
-                    resolve(code !== 127);
-                });
-            }),
-            new Promise((resolve) => {
-                p.on('error', (_) => resolve(false));
-            })
+            new Promise((resolve) => { p.on('close', (code) => { resolve(code !== 127); }); }),
+            new Promise((resolve) => { p.on('error', (_) => resolve(false)); })
         ]);
     }));
     const [ffmpeg, ffprobe, ffmpegWebp, convert, magick, gm, find] = test;
     global.support = { ffmpeg, ffprobe, ffmpegWebp, convert, magick, gm, find };
     Object.freeze(global.support);
 }
+
 function clearDirectory(dirPath) {
-    if (!existsSync(dirPath)) {
-        try {
-            mkdirSync(dirPath, { recursive: true });
-        } catch (e) {
-            console.error(chalk.red(`Errore nella creazione della directory ${dirPath}:`, e));
-        }
-        return 0;
-    }
+    if (!existsSync(dirPath)) { try { mkdirSync(dirPath, { recursive: true }); } catch (e) {} return 0; }
     const filenames = readdirSync(dirPath);
     let deleted = 0;
     filenames.forEach(file => {
         const filePath = join(dirPath, file);
         try {
             const stats = statSync(filePath);
-            if (stats.isFile()) {
-                unlinkSync(filePath);
-                deleted++;
-            } else if (stats.isDirectory()) {
-                rmSync(filePath, { recursive: true, force: true });
-                deleted++;
-            }
-        } catch (e) {
-            console.error(chalk.red(`Errore nella pulizia del file ${filePath}:`, e));
-        }
+            if (stats.isFile()) { unlinkSync(filePath); deleted++; }
+            else if (stats.isDirectory()) { rmSync(filePath, { recursive: true, force: true }); deleted++; }
+        } catch (e) {}
     });
     return deleted;
 }
@@ -559,12 +507,13 @@ setInterval(async () => {
     if (global.stopped === 'close' || !conn || !conn.user) return;
     const deleted = clearDirectory(join(__dirname, 'temp'));
     if (deleted > 0) {
-        console.log(chalk.bold.greenBright(`\n╭⭑⭒━━━✦❘༻ 🟢 PULIZIA MULTIMEDIA 🟢 ༺❘✦━━━⭒⭑\n┃          ${deleted} FILE NELLA CARTELLA TEMP\n┃          ELIMINATI CON SUCCESSO\n╰⭑⭒━━━✦❘༻☾⋆⁺₊🗑️ 𝓿𝓪𝓻𝓮�𝓸𝓽 ♻️₊⁺⋆☽༺❘✦━━━⭒⭑`));
+        console.log(chalk.bold.hex('#2ECC71')(`\n╭───〔 🟢 PULIZIA MULTIMEDIA 🟢 〕\n│ ${deleted} FILE NELLA CARTELLA TEMP\n│ ELIMINATI CON SUCCESSO\n╰───〔 𝐋𝐄𝐆𝐀𝐌 𝐁𝐎𝐓 ♻️ 〕`));
     }
 }, 1000 * 60 * 60);
-_quickTest().then(() => conn.logger.info(chalk.bold.magentaBright(``)));
+
+_quickTest().then(() => conn.logger.info(chalk.bold.hex('#00CED1')(`SISTEMA OPERATIVO ATTIVO`)));
 let filePath = fileURLToPath(import.meta.url);
 const mainWatcher = watch(filePath, async () => {
-  console.log(chalk.bgHex('#3b0d95')(chalk.white.bold("File: 'based.js' Aggiornato")))
+  console.log(chalk.bgHex('#00BFFF')(chalk.white.bold("Core: 'based.js' Aggiornato")))
 });
 mainWatcher.setMaxListeners(20);
