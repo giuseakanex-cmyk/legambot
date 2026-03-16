@@ -1,79 +1,106 @@
+import './config.js'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import chalk from 'chalk'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const pluginFolder = path.join(__dirname, 'plugin')
 
-// Caricamento plugin istantaneo
+// Caricamento Dinamico Plugin
 global.plugins = {}
-if (fs.existsSync(pluginFolder)) {
-    const files = fs.readdirSync(pluginFolder).filter(f => f.endsWith('.js'))
-    for (let f of files) {
-        import(`./plugin/${f}?u=${Date.now()}`).then(p => {
-            global.plugins[f] = p.default || p
-        })
+let files = fs.readdirSync(pluginFolder).filter(f => f.endsWith('.js'))
+for (let file of files) {
+    try {
+        let plugin = await import(`./plugin/${file}?u=${Date.now()}`)
+        global.plugins[file] = plugin.default || plugin
+    } catch (e) {
+        console.error(`Errore caricamento ${file}:`, e)
     }
 }
 
-export async function handler(conn, m) {
-    if (!m.messages) return
-    let msg = m.messages[0]
-    if (!msg.message || msg.key.remoteJid === 'status@broadcast') return
+export async function handler(chatUpdate) {
+    if (!chatUpdate.messages) return
+    let m = chatUpdate.messages[0]
+    if (!m.message || m.key.remoteJid === 'status@broadcast') return
 
-    const type = Object.keys(msg.message)[0]
-    let text = msg.message.conversation || msg.message[type]?.text || msg.message[type]?.caption || ''
-    let sender = msg.key.participant || msg.key.remoteJid
-    let chat = msg.key.remoteJid
-    let isGroup = chat.endsWith('@g.us')
-    
-    let isOwner = global.owner.some(o => sender.includes(o[0])) || msg.key.fromMe
-    let isBotAdmin = false, isAdmin = false
-    if (isGroup) {
-        let metadata = await conn.groupMetadata(chat).catch(() => null)
-        if (metadata) {
-            let botId = conn.user.id.split(':')[0] + '@s.whatsapp.net'
-            isAdmin = metadata.participants.some(p => p.id === sender && p.admin)
-            isBotAdmin = metadata.participants.some(p => p.id === botId && p.admin)
-        }
-    }
+    // SERIALIZZAZIONE MESSAGGIO (smsg)
+    try {
+        const type = Object.keys(m.message)[0]
+        m.text = m.message.conversation || m.message[type]?.text || m.message[type]?.caption || ''
+        m.sender = m.key.participant || m.key.remoteJid
+        m.chat = m.key.remoteJid
+        m.isGroup = m.chat.endsWith('@g.us')
+        m.reply = (text) => this.sendMessage(m.chat, { text }, { quoted: m })
 
-    let fakeM = {
-        ...msg, text, sender, chat, isGroup,
-        reply: (t) => conn.sendMessage(chat, { text: t }, { quoted: msg })
-    }
-
-    // Esecuzione plugin passivi
-    for (let name in global.plugins) {
-        let p = global.plugins[name]
-        if (p.all) await p.all.call(conn, fakeM, { isOwner, isAdmin, isBotAdmin })
-    }
-
-    // Controllo Comandi
-    if (!global.prefix.test(text)) return
-    let usedPrefix = text.match(global.prefix)[0]
-    let command = text.slice(usedPrefix.length).trim().split(' ')[0].toLowerCase()
-    let args = text.trim().split(' ').slice(1)
-
-    for (let name in global.plugins) {
-        let p = global.plugins[name]
-        if (!p.command) continue
-        let match = Array.isArray(p.command) ? p.command.includes(command) : p.command === command
+        // DATABASE CHECK
+        if (!global.db.data) await global.loadDatabase()
+        let user = global.db.data.users[m.sender]
+        if (!user) user = global.db.data.users[m.sender] = { exp: 0, euro: 10, limit: 20, registered: false, banned: false }
         
-        if (match) {
-            if (p.owner && !isOwner) return fakeM.reply(global.mess.owner)
-            if (p.group && !isGroup) return fakeM.reply(global.mess.group)
-            if (p.admin && !isAdmin && !isOwner) return fakeM.reply(global.mess.admin)
-            if (p.botAdmin && !isBotAdmin) return fakeM.reply(global.mess.botAdmin)
+        let chat = global.db.data.chats[m.chat]
+        if (!chat) chat = global.db.data.chats[m.chat] = { isBanned: false, welcome: false, antilink: false }
 
-            try {
-                await p.call(conn, fakeM, { conn, text: args.join(' '), args, command, isOwner, isAdmin })
-            } catch (e) {
-                console.error(e)
-                fakeM.reply(global.mess.error)
+        // PERMESSI
+        let isOwner = global.owner.some(o => m.sender.includes(o[0])) || m.key.fromMe
+        let isPrems = isOwner || global.prems.some(p => m.sender.includes(p))
+        let isAdmin = false, isBotAdmin = false
+        if (m.isGroup) {
+            let metadata = await this.groupMetadata(m.chat).catch(() => null)
+            if (metadata) {
+                let botId = this.user.id.split(':')[0] + '@s.whatsapp.net'
+                isAdmin = metadata.participants.some(p => p.id === m.sender && p.admin)
+                isBotAdmin = metadata.participants.some(p => p.id === botId && p.admin)
             }
-            break
         }
+
+        // COMANDI
+        if (!global.prefix.test(m.text)) {
+            // Logica per messaggi normali (guadagno exp)
+            user.exp += 1
+            return
+        }
+
+        let usedPrefix = m.text.match(global.prefix)[0]
+        let noPrefix = m.text.replace(usedPrefix, '').trim()
+        let args = noPrefix.split(/\s+/).slice(1)
+        let command = noPrefix.split(/\s+/)[0].toLowerCase()
+
+        for (let name in global.plugins) {
+            let plugin = global.plugins[name]
+            if (!plugin.command) continue
+            let isMatch = Array.isArray(plugin.command) ? plugin.command.includes(command) : plugin.command === command
+            
+            if (isMatch) {
+                // CONTROLLI DI SICUREZZA (DFAIL)
+                if (plugin.owner && !isOwner) return global.dfail('owner', m, this)
+                if (plugin.rowner && !isOwner) return global.dfail('rowner', m, this)
+                if (plugin.group && !m.isGroup) return global.dfail('group', m, this)
+                if (plugin.admin && !isAdmin && !isOwner) return global.dfail('admin', m, this)
+                if (plugin.botAdmin && !isBotAdmin) return global.dfail('botAdmin', m, this)
+                if (plugin.premium && !isPrems) return global.dfail('premium', m, this)
+
+                try {
+                    await plugin.call(this, m, {
+                        conn: this,
+                        args,
+                        text: args.join(' '),
+                        command,
+                        usedPrefix,
+                        isOwner,
+                        isAdmin,
+                        isBotAdmin
+                    })
+                } catch (e) {
+                    console.error(e)
+                    m.reply('『 ⚠️ 』 `Errore nell\'esecuzione del comando.`')
+                }
+                break
+            }
+        }
+
+    } catch (e) {
+        console.error(e)
     }
 }
 
