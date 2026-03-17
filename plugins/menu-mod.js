@@ -5,7 +5,7 @@ let handler = async (m, { usedPrefix }) => {
 
 •━━━━━━✧✦━━━━━━•
 🛠️ 𝐂𝐎𝐌𝐀𝐍𝐃𝐈 𝐌𝐎𝐃𝐄𝐑𝐀𝐓𝐎𝐑𝐈
-➤ ${usedPrefix}tagmod 🧙‍♂️ Tagga tutto il gruppo 
+➤ ${usedPrefix}totag 🧙‍♂️ Tagga tutto il gruppo 
 ➤ ${usedPrefix}pingmod ⚡ Verifica il ping
 ➤ ${usedPrefix}delm 🚫 Elimina messaggio 
 ➤ ${usedPrefix}nukegp ☢️ Fake nuke
