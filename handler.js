@@ -231,8 +231,10 @@ export async function handler(chatUpdate) {
     this.uptime = this.uptime || Date.now()
     if (!chatUpdate) return
     this.pushMessage(chatUpdate.messages).catch(console.error)
+    
     let m = chatUpdate.messages[chatUpdate.messages.length - 1]
     if (!m) return
+
     if (m.message?.protocolMessage?.type === 'MESSAGE_EDIT') {
         const key = m.message.protocolMessage.key;
         const editedMessage = m.message.protocolMessage.editedMessage;
@@ -241,9 +243,13 @@ export async function handler(chatUpdate) {
         m.text = editedMessage.conversation || editedMessage.extendedTextMessage?.text || '';
         m.mtype = Object.keys(editedMessage)[0];
     }
+
     m = smsg(this, m, global.store)
     if (!m || !m.key || !m.chat || !m.sender) return
-    if (m.fromMe) return
+    
+    // 🔥 RIMOSSO IL BLOCCO: if (m.fromMe) return; 
+    // Ora il bot può reagire ai messaggi che invii dal tuo stesso account (o che lui stesso genera)!
+
     if (m.key.participant && m.key.participant.includes(':') && m.key.participant.split(':')[1]?.includes('@')) return
 
     if (m.key) {
@@ -377,7 +383,6 @@ export async function handler(chatUpdate) {
         let isMods = isOwner || global.mods?.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(normalizedSender) || false
         let isPrems = isROwner || global.prems?.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(normalizedSender) || false
         
-        // IL MOTORE INFALLIBILE PER I PERMESSI DEL TUO AMICO
         if (m.isGroup) {
             if (!groupMetadata) {
                 groupMetadata = await fetchGroupMetadataWithRetry(this, m.chat)
@@ -515,7 +520,6 @@ export async function handler(chatUpdate) {
 
                 if (!isAccept) continue
 
-                // CONTROLLO LIVE FINALE COME QUELLO DEL TUO AMICO
                 if (m.isGroup && (plugin.admin || plugin.botAdmin)) {
                     const freshMetadata = global.groupCache.get(m.chat) || await fetchGroupMetadataWithRetry(this, m.chat)
                     if (freshMetadata) {
@@ -726,9 +730,6 @@ export async function handler(chatUpdate) {
     }
 }
 
-// =======================================================
-// MESSAGGI DI ERRORE STILE LEGAM OS
-// =======================================================
 global.dfail = async (type, m, conn) => {
     const nome = m.pushName || 'utente'
     const etarandom = Math.floor(Math.random() * 21) + 13
