@@ -1,6 +1,7 @@
 const handler = async (m, { conn, text, participants, command }) => {
   try {
     const users = participants.map((u) => conn.decodeJid(u.id));
+    
     if (m.quoted) {
       const quoted = m.quoted;
       if (quoted.mtype === 'imageMessage') {
@@ -67,10 +68,12 @@ const handler = async (m, { conn, text, participants, command }) => {
   }
 };
 
-handler.help = ['hidetag', 'totag', 'tag'];
+handler.help = ['hidetag', 'tag'];
 handler.tags = ['gruppo'];
-handler.command = /^(\.?hidetag|totag|tag)$/i;
-handler.admin = true;
+// Rimosso totag da qui per evitare conflitti
+handler.command = /^(hidetag|tag)$/i;
+handler.admin = true; // Solo admin del gruppo
 handler.group = true;
 
 export default handler;
+
