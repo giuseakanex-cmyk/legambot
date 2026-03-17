@@ -15,7 +15,6 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
       ⋆｡˚『 𝐌𝐄𝐍𝐔 𝐃𝐈𝐒𝐏𝐎𝐍𝐈𝐁𝐈𝐋𝐈 』˚｡⋆
 ╭
 
-*│ ➤* 🤖 ${_p}menuia
 *│ ➤* ⭐ ${_p}menupremium
 *│ ➤* 🛠️ ${_p}menustrumenti
 *│ ➤* 💰 ${_p}menueuro
