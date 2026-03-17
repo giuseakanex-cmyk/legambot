@@ -4,7 +4,7 @@ const handler = async (m, { conn, text, participants, command }) => {
     
     // Cattura il testo e aggiunge la freccia Legam OS all'inizio
     let testoGrezzo = text || (m.quoted && m.quoted.text ? m.quoted.text : '');
-    let legamText = testoGrezzo ? `➤ ${testoGrezzo}` : '';
+    let legamText = testoGrezzo ? `➻ ${testoGrezzo}` : '';
 
     if (m.quoted) {
       const quoted = m.quoted;
@@ -60,7 +60,7 @@ const handler = async (m, { conn, text, participants, command }) => {
     else if (text) {
       // Se è un testo normale scritto dopo il comando
       await conn.sendMessage(m.chat, {
-        text: `➤ ${text}`,
+        text: `➻ ${text}`,
         mentions: users
       }, { quoted: m });
     }
