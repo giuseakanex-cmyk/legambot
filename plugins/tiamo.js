@@ -1,33 +1,50 @@
-let handler = async (m, { conn, isOwner }) => {
-    // Se chi scrive "ti amo" NON è l'owner (Giuse), il bot ignora il messaggio in silenzio
-    if (!isOwner) return;
+let handler = async (m, { conn }) => {
+    // ID dei protagonisti
+    const giuseNum = '4915511872095'
+    const lindaNum = '212780909981'
+    
+    // Estraiamo il numero di chi scrive
+    const senderNum = m.sender.split('@')[0]
 
-    try {
-        // Il bot reagisce al tuo messaggio con una faccia sospettosa
-        await conn.sendMessage(m.chat, { react: { text: '🤨', key: m.key } });
+    // Se a scrivere "ti amo" è Giuse
+    if (senderNum === giuseNum) {
+        await conn.sendMessage(m.chat, { react: { text: '🤨', key: m.key } })
+        
+        let msgGiuse = `
+⊹ ࣪ ˖ ✦ ━━ 𝐀𝐋𝐋𝐄𝐑𝐓𝐀 𝐆𝐈𝐔𝐒𝐄 ━━ ✦ ˖ ࣪ ⊹
 
-        // Messaggio personalizzato e simpatico
-        let msgFedelta = `
-⊹ ࣪ ˖ ✦ ━━ 𝐀𝐋𝐋𝐄𝐑𝐓𝐀 𝐒𝐄𝐍𝐓𝐈𝐌𝐄𝐍𝐓𝐀𝐋𝐄 ━━ ✦ ˖ ࣪ ⊹
+🤨 *Frena i cavalli, Giuse!* Non ti ricordi che queste parole le puoi rivolgere **solo a Linda**? 
 
-🤨 *Ehm... scusa Giuse?* Ma non ti ricordi che questa frase la puoi dire **SOLO** a Linda? 
+⚠️ \`Protocollo Fedeltà Attivo:\` 
+Il database ha registrato la tua dichiarazione. Non costringermi a inviare un report dettagliato alla "capo" eh... torna subito a fare il bravo! 🤫💖
 
-🔒 \`Il Legam Core ha rilevato un'anomalia.\` 
-Guarda che ho accesso a tutta la cronologia... se fai il furbo impacchetto i log e le mando gli screen in privato eh! 🤫💖
-
-Torna subito nei ranghi, soldato. 🫡
-✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim();
-
-        // Invia il messaggio con il solito stile grafico (facoltativo, rcanal per l'immagine)
-        await conn.reply(m.chat, msgFedelta, m, global.rcanal);
-
-    } catch (e) {
-        console.error("Errore nel plugin tiamo:", e);
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
+        
+        return await conn.reply(m.chat, msgGiuse, m, global.rcanal)
     }
+
+    // Se a scrivere "ti amo" è Linda
+    if (senderNum === lindaNum) {
+        await conn.sendMessage(m.chat, { react: { text: '👀', key: m.key } })
+        
+        let msgLinda = `
+⊹ ࣪ ˖ ✦ ━━ 𝐀𝐋𝐋𝐄𝐑𝐓𝐀 𝐋𝐈𝐍𝐃𝐀 ━━ ✦ ˖ ࣪ ⊹
+
+👀 *Attenzione Linda!* Guarda che Giuse è molto geloso del suo bot... ricordati che quel "ti amo" deve avere un solo destinatario: **Giuse**! 
+
+💍 \`Legam Core Security:\` 
+Ho appena attivato la scansione dei sentimenti. Non vorrai mica che faccia scattare l'allarme generale nel sistema di Giuse? Ti tengo d'occhio! ✨🔐
+
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
+        
+        return await conn.reply(m.chat, msgLinda, m, global.rcanal)
+    }
+
+    // Se lo dice qualcun altro, il bot non fa nulla (così non rompe le scatole nel gruppo)
+    return;
 }
 
-// customPrefix serve per far scattare il comando ANCHE SE NON USI IL PREFISSO (., !, ecc.)
-// In questo modo basterà che tu scriva "ti amo" all'interno di una frase qualsiasi
+// Scatta ogni volta che nel testo compare "ti amo" (senza bisogno di prefisso)
 handler.customPrefix = /ti amo/i 
 handler.command = new RegExp
 
