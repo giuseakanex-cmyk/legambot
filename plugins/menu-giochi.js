@@ -1,59 +1,59 @@
-import fs from 'fs'
-
-const defaultMenu = {
-  before: ``.trimStart(),
-  header: 'ㅤㅤ⋆｡˚『 ╭ \`MENU GIOCHI\` ╯ 』˚｡⋆\n╭',
-  body: '│ ➤『🎮』 %cmd',
-  footer: '*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*\n',
-  after: ``,
-}
-const handler = async (m, { conn, usedPrefix: _p }) => {
-  const tags = { 'giochi': 'Giochi' }
-
+let handler = async (m, { conn, usedPrefix: _p }) => {
   try {
-    await conn.sendPresenceUpdate('composing', m.chat)
+    // Reazione di caricamento
+    await conn.sendMessage(m.chat, { react: { text: '🎮', key: m.key } });
     
-    const help = Object.values(global.plugins)
+    // Filtra tutti i plugin che hanno 'giochi' tra i tags
+    const giochiList = Object.values(global.plugins)
       .filter(plugin => !plugin.disabled && plugin.tags && plugin.tags.includes('giochi'))
       .map(plugin => ({
         help: Array.isArray(plugin.help) ? plugin.help : [plugin.help],
         prefix: 'customPrefix' in plugin
-      }))
+      }));
 
-    const text = [
-      defaultMenu.before,
-      defaultMenu.header.replace(/%category/g, tags['giochi']),
-      help.map(menu => 
-        menu.help.map(cmd => 
-          defaultMenu.body.replace(/%cmd/g, menu.prefix ? cmd : _p + cmd)
-        ).join('\n')
-      ).join('\n'),
-      defaultMenu.footer,
-      defaultMenu.after
-    ].join('\n') 
+    // Costruzione dell'estetica Legam OS (Solo testo)
+    let textMenu = `
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
+· 𝐋 𝐄 𝐆 𝐀 𝐌  𝐀 𝐑 𝐂 𝐀 𝐃 𝐄 ·
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 
- conn.sendMessage(m.chat, {
-    image: fs.readFileSync('./media/menu/varebotcoc.jpg'),
-    caption: text.trim(),
-    ...fake,
-    contextInfo: {
-        ...fake.contextInfo,
-        mentionedJid: [m.sender],
-        forwardedNewsletterMessageInfo: {
-            ...fake.contextInfo.forwardedNewsletterMessageInfo,
-            newsletterName: "ᰔᩚ . ˚ Menu Giochi ☆˒˒"
+『 🎮 』 𝐋 𝐈 𝐒 𝐓 𝐀  𝐆 𝐈 𝐎 𝐂 𝐇 𝐈\n\n`;
+
+    // Aggiunge i comandi alla lista dinamicamente
+    giochiList.forEach(menu => {
+      menu.help.forEach(cmd => {
+        if (cmd) {
+            textMenu += `· ${menu.prefix ? cmd : _p + cmd}\n`;
         }
-    }
-}, { quoted: m })
+      });
+    });
+
+    textMenu += `\n👑 𝐎𝐖𝐍𝐄𝐑\n➤ 𝐆𝐈𝐔𝐒𝚵\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`;
+
+    // Invia il messaggio SOLO TESTO con il Fake Channel
+    await conn.sendMessage(m.chat, {
+      text: textMenu.trim(),
+      contextInfo: {
+        mentionedJid: [m.sender],
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: "120363233544482011@newsletter",
+          newsletterName: "✨.✦★彡 𝐋𝐞𝐠𝐚𝐦 𝐎𝐒 𝐀𝐫𝐜𝐚𝐝𝐞 Ξ★✦.•",
+          serverMessageId: 100
+        }
+      }
+    }, { quoted: m });
 
   } catch (e) {
-    console.error(e)
-    conn.reply(m.chat, global.fake.error, m)
-    throw e
+    console.error('Errore nel menu giochi:', e);
+    m.reply('❌ `Errore nella generazione del menu Arcade.`');
   }
-}
-handler.help = ['menugiochi']
-handler.tags = ['menu']
-handler.command = ['menugiochi', 'menugame']
+};
 
-export default handler
+handler.help = ['menugiochi'];
+handler.tags = ['menu'];
+handler.command = /^(menugiochi|menugame|giochi|games)$/i;
+
+export default handler;
+
+
