@@ -66,11 +66,8 @@ function applyPrefixFromSettings(settings) {
     }
 }
 
-// 🛡️ SCUDO NUMERICO
-const getPureNumber = (id) => {
-    if (!id) return '';
-    return String(id).split('@')[0].split(':')[0].replace(/[^0-9]/g, '');
-};
+// Scudo Numerico usato SOLO per identificare te come Owner (non interferisce più con gli admin)
+const cleanNum = (num) => String(num || '').split('@')[0].split(':')[0].replace(/[^0-9]/g, '')
 
 export async function handler(chatUpdate) {
     this.msgqueque = this.msgqueque || []
@@ -99,34 +96,35 @@ export async function handler(chatUpdate) {
 
     if (!global.db.data) await global.loadDatabase()
     
+    // =======================================================
+    // 🔥 IDENTITÀ NATIVE COME NEL TERMINALE
+    // =======================================================
     const normalizedSender = this.decodeJid(m.sender)
+    const normalizedBot = this.decodeJid(this.user?.id || this.user?.jid || '')
+    
     const user = global.db.data.users[normalizedSender] || (global.db.data.users[normalizedSender] = { ...defuser, name: m.pushName || '?' })
     const chat = chatz(m.chat)
     const settings = global.db.data.settings?.[this.user.jid] || (global.db.data.settings[this.user.jid] = { anticall: true, status: 0 })
     
     applyPrefixFromSettings(settings)
 
-    // =======================================================
-    // 👑 IDENTITÀ BLINDATE
-    // =======================================================
-    const myBotNumber = getPureNumber(this.user?.id || this.user?.jid);
-    const senderNumber = getPureNumber(m.sender);
-    
-    let isSam = (global.sam || []).map(getPureNumber).includes(senderNumber);
-    let isOwner = isSam || m.fromMe || (global.owner || []).map(o => getPureNumber(o[0])).includes(senderNumber);
-    let isMods = isOwner || (global.mods || []).map(getPureNumber).includes(senderNumber);
-    let isPrems = isOwner || (global.prems || []).map(getPureNumber).includes(senderNumber);
+    // IDENTITÀ OWNER: Uso il cleanNum per sicurezza
+    let pureSender = cleanNum(normalizedSender)
+    let isSam = (global.sam || []).map(cleanNum).includes(pureSender)
+    let isOwner = isSam || m.fromMe || (global.owner || []).map(o => cleanNum(o[0])).includes(pureSender)
+    let isMods = isOwner || (global.mods || []).map(cleanNum).includes(pureSender)
+    let isPrems = isOwner || (global.prems || []).map(cleanNum).includes(pureSender)
 
-    let isAdmin = false;
-    let isBotAdmin = false;
-    let participants = [];
+    let isAdmin = false, isBotAdmin = false
+    let participants = []
 
+    // 🔥 CALCOLO ADMIN ESATTAMENTE COME PRINT.JS (Se va lì, va qui)
     if (m.isGroup) {
         let groupMetadata = global.groupCache.get(m.chat) || await fetchGroupMetadataWithRetry(this, m.chat)
         if (groupMetadata) {
-            participants = groupMetadata.participants || [];
-            isAdmin = participants.some(u => getPureNumber(u.id) === senderNumber && (u.admin === 'admin' || u.admin === 'superadmin'));
-            isBotAdmin = participants.some(u => getPureNumber(u.id) === myBotNumber && (u.admin === 'admin' || u.admin === 'superadmin'));
+            participants = groupMetadata.participants || []
+            isAdmin = participants.some(u => this.decodeJid(u.id) === normalizedSender && (u.admin === 'admin' || u.admin === 'superadmin'))
+            isBotAdmin = participants.some(u => this.decodeJid(u.id) === normalizedBot && (u.admin === 'admin' || u.admin === 'superadmin'))
         }
     }
 
@@ -162,32 +160,29 @@ export async function handler(chatUpdate) {
         m.plugin = name
         m.isCommand = true
 
-        // Aggiornamento Live in caso di permessi mancanti
+        // =======================================================
+        // 🔥 DOPPIO CONTROLLO LIVE (Senza Cache)
+        // =======================================================
         let needsBotAdmin = plugin.botAdmin && !isBotAdmin;
         let needsAdmin = plugin.admin && !isAdmin && !isOwner; 
 
         if ((needsBotAdmin || needsAdmin) && m.isGroup) {
             try {
+                // Il bot interroga WhatsApp in tempo reale!
                 const freshMeta = await this.groupMetadata(m.chat).catch(() => null);
                 if (freshMeta) {
                     global.groupCache.set(m.chat, freshMeta, { ttl: 300 });
                     participants = freshMeta.participants || [];
-                    isAdmin = participants.some(u => getPureNumber(u.id) === senderNumber && (u.admin === 'admin' || u.admin === 'superadmin'));
-                    isBotAdmin = participants.some(u => getPureNumber(u.id) === myBotNumber && (u.admin === 'admin' || u.admin === 'superadmin'));
                     
+                    // Ricalcola col metodo nativo infallibile
+                    isAdmin = participants.some(u => this.decodeJid(u.id) === normalizedSender && (u.admin === 'admin' || u.admin === 'superadmin'));
+                    isBotAdmin = participants.some(u => this.decodeJid(u.id) === normalizedBot && (u.admin === 'admin' || u.admin === 'superadmin'));
+                    
+                    // Aggiorna i blocchi
                     needsBotAdmin = plugin.botAdmin && !isBotAdmin;
                     needsAdmin = plugin.admin && !isAdmin && !isOwner;
                 }
             } catch (err) {}
-        }
-
-        // =======================================================
-        // 🔥 LA FORZATURA SUPREMA (OWNER OVERRIDE)
-        // Se il bot pensa ancora di non essere admin, ma chi dà il comando
-        // è l'Owner Supremo... noi diciamo al bot "TACI E PROVACI LO STESSO!"
-        // =======================================================
-        if (needsBotAdmin && isOwner) {
-            needsBotAdmin = false; // Rimuove il blocco forzatamente
         }
 
         // 🛡️ CONTROLLO PERMESSI DEL PLUGIN
@@ -196,6 +191,7 @@ export async function handler(chatUpdate) {
         if (plugin.mods && !isMods) { fail('mods', m, this); continue } 
         if (plugin.group && !m.isGroup) { fail('group', m, this); continue }
         
+        // Esecuzione controlli calcolati
         if (needsAdmin) { fail('admin', m, this); continue }
         if (needsBotAdmin) { fail('botAdmin', m, this); continue }
 
@@ -207,8 +203,7 @@ export async function handler(chatUpdate) {
             if (plugin.euro) user.euro -= plugin.euro
         } catch (e) {
             console.error(`[ERRORE] Plugin ${name}:`, e)
-            // Se la forzatura fallisce perché WhatsApp lo blocca per davvero, lo dirà qui.
-            m.reply(`❌ \`Errore Interno:\` WhatsApp ha bloccato l'azione. Verifica che il bot sia realmente Admin.`)
+            m.reply('『 ⚠️ 』 Errore interno nel comando.')
         }
         break 
     }
