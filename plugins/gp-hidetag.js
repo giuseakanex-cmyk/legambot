@@ -2,13 +2,17 @@ const handler = async (m, { conn, text, participants, command }) => {
   try {
     const users = participants.map((u) => conn.decodeJid(u.id));
     
+    // Cattura il testo e aggiunge la freccia Legam OS all'inizio
+    let testoGrezzo = text || (m.quoted && m.quoted.text ? m.quoted.text : '');
+    let legamText = testoGrezzo ? `➤ ${testoGrezzo}` : '';
+
     if (m.quoted) {
       const quoted = m.quoted;
       if (quoted.mtype === 'imageMessage') {
         const media = await quoted.download();
         await conn.sendMessage(m.chat, {
           image: media,
-          caption: text || quoted.text || '',
+          caption: legamText,
           mentions: users
         }, { quoted: m });
       }
@@ -16,7 +20,7 @@ const handler = async (m, { conn, text, participants, command }) => {
         const media = await quoted.download();
         await conn.sendMessage(m.chat, {
           video: media,
-          caption: text || quoted.text || '',
+          caption: legamText,
           mentions: users
         }, { quoted: m });
       }
@@ -34,7 +38,7 @@ const handler = async (m, { conn, text, participants, command }) => {
           document: media,
           mimetype: quoted.mimetype,
           fileName: quoted.fileName,
-          caption: text || quoted.text || '',
+          caption: legamText,
           mentions: users
         }, { quoted: m });
       }
@@ -46,15 +50,17 @@ const handler = async (m, { conn, text, participants, command }) => {
         }, { quoted: m });
       }
       else {
+        // Se è un normale messaggio citato
         await conn.sendMessage(m.chat, {
-          text: quoted.text || text || '',
+          text: legamText,
           mentions: users
         }, { quoted: m });
       }
     }
     else if (text) {
+      // Se è un testo normale scritto dopo il comando
       await conn.sendMessage(m.chat, {
-        text: text,
+        text: `➤ ${text}`,
         mentions: users
       }, { quoted: m });
     }
@@ -70,10 +76,10 @@ const handler = async (m, { conn, text, participants, command }) => {
 
 handler.help = ['hidetag', 'tag'];
 handler.tags = ['gruppo'];
-// Rimosso totag da qui per evitare conflitti
 handler.command = /^(hidetag|tag)$/i;
 handler.admin = true; // Solo admin del gruppo
 handler.group = true;
 
 export default handler;
+
 
