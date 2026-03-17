@@ -40,8 +40,7 @@ handler.help = ['totag'];
 handler.tags = ['moderazione'];
 handler.command = /^totag$/i;
 handler.group = true;
-// IL SEGRETO È QUI:
-handler.mods = true; // Solo Owner e Moderatori possono usarlo. Niente limiti di "Admin del gruppo".
+// Solo Owner e Moderatori possono usarlo. Niente limiti di "Admin del gruppo".
+handler.mods = true; 
 
 export default handler;
-
