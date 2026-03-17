@@ -273,7 +273,6 @@ export async function handler(chatUpdate) {
     let normalizedBot = null
 
     try {
-        // Gestione Eventi e Bottoni
         if (m.message?.eventResponseMessage) {
             const { eventId, response } = m.message.eventResponseMessage
             const jid = this.decodeJid(m.key.remoteJid)
@@ -309,11 +308,15 @@ export async function handler(chatUpdate) {
         }
 
         normalizedSender = this.decodeJid(m.sender)
-        normalizedBot = this.decodeJid(this.user.jid)
+        // 🔥 FIX BOT ADMIN: CERCA IL NUMERO DEL BOT NEL POSTO CORRETTO
+        normalizedBot = this.decodeJid(this.user?.id || this.user?.jid)
+        
         if (!normalizedSender || normalizedSender.endsWith('@lid')) return;
         user = global.db.data.users[normalizedSender] || (global.db.data.users[normalizedSender] = { ...defuser, name: m.pushName || '?', firstTime: Date.now() })
         chat = chatz(m.chat)
-        let settings = settingz(this.decodeJid(this.user.jid))
+        
+        // 🔥 FIX SETTINGS: Assicura che anche le impostazioni del bot vengano lette
+        let settings = settingz(this.decodeJid(this.user?.id || this.user?.jid))
         applyPrefixFromSettings(settings)
         if (m.mtype === 'pollUpdateMessage') return
         if (m.mtype === 'reactionMessage') return
@@ -441,7 +444,7 @@ export async function handler(chatUpdate) {
 
                 m.isCommand = true
 
-                // ANTI SPAM DI VAREBOT
+                // ANTI SPAM
                 const COMMAND_SPAM_WINDOW_MS = 60000
                 const COMMAND_SPAM_MAX = 8
                 const COMMAND_SPAM_SUSPEND_MS = 15000
@@ -531,7 +534,8 @@ export async function handler(chatUpdate) {
                 if (typeof printer?.default === 'function') await printer.default(m, this)
             }
         } catch (e) {}
-        let settingsREAD = global.db.data.settings[this.decodeJid(this.user.jid)] || {}
+        
+        let settingsREAD = global.db.data.settings[this.decodeJid(this.user?.id || this.user?.jid)] || {}
         if ((global.opts['autoread'] || settingsREAD.autoread || settingsREAD.autoread2) && m) {
             await this.readMessages([m.key]).catch(() => {})
         }
@@ -542,7 +546,6 @@ export async function handler(chatUpdate) {
     }
 }
 
-// 👑 I MESSAGGI DI SISTEMA DI LEGAM OS
 global.dfail = async (type, m, conn) => {
     const nome = m.pushName || 'utente'
     const etarandom = Math.floor(Math.random() * 21) + 13
