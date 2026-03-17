@@ -66,17 +66,14 @@ function applyPrefixFromSettings(settings) {
     }
 }
 
-// 🛡️ SCUDO NUMERICO: Rimuove QUALSIASI cosa non sia un numero (Indispensabile per WhatsApp)
-const cleanNum = (num) => String(num || '').split('@')[0].split(':')[0].replace(/[^0-9]/g, '')
-
-// 🛡️ FUNZIONE INFALLIBILE PER GLI ADMIN
-const checkIsAdmin = (participants, targetNum) => {
-    let pureTarget = cleanNum(targetNum);
-    return participants.some(u => {
-        let pureU = cleanNum(u.id);
-        return pureU === pureTarget && (u.admin === 'admin' || u.admin === 'superadmin');
-    });
-};
+// 🛡️ SCUDO NUMERICO: Pulisce da @lid, :15, e lettere. Infallibile.
+const cleanNum = (num) => {
+    if (!num) return '';
+    let str = String(num);
+    if (str.includes('@')) str = str.split('@')[0];
+    if (str.includes(':')) str = str.split(':')[0];
+    return str.replace(/[^0-9]/g, '');
+}
 
 export async function handler(chatUpdate) {
     this.msgqueque = this.msgqueque || []
@@ -113,30 +110,27 @@ export async function handler(chatUpdate) {
     applyPrefixFromSettings(settings)
 
     // =======================================================
-    // 👑 IL SISTEMA GERARCHICO LEGAM OS
+    // 👑 IDENTITÀ PURIFICATA (Scudo Numerico Attivo)
     // =======================================================
-    let pureSender = cleanNum(m.sender)
+    let botJid = this.decodeJid(this.user?.id || this.user?.jid || '');
+    let pureBotNum = cleanNum(botJid);
+    let pureSender = cleanNum(m.sender);
     
-    let isSam = (global.sam || []).map(cleanNum).includes(pureSender)
-    let isOwner = isSam || m.fromMe || (global.owner || []).map(o => cleanNum(o[0])).includes(pureSender)
-    let isMods = isOwner || (global.mods || []).map(cleanNum).includes(pureSender)
-    let isPrems = isOwner || (global.prems || []).map(cleanNum).includes(pureSender)
+    let isSam = (global.sam || []).map(cleanNum).includes(pureSender);
+    let isOwner = isSam || m.fromMe || (global.owner || []).map(o => cleanNum(o[0])).includes(pureSender);
+    let isMods = isOwner || (global.mods || []).map(cleanNum).includes(pureSender);
+    let isPrems = isOwner || (global.prems || []).map(cleanNum).includes(pureSender);
 
     let isAdmin = false, isBotAdmin = false
     let participants = []
-    
-    // 🔥 CONTROLLO ADMIN BLINDATO AL 1000%
+
+    // Controllo primario (tramite Cache)
     if (m.isGroup) {
         let groupMetadata = global.groupCache.get(m.chat) || await fetchGroupMetadataWithRetry(this, m.chat)
         if (groupMetadata) {
             participants = groupMetadata.participants
-            
-            // Identità sicura del bot estratta dalla libreria
-            let botJid = this.decodeJid(this.user?.id || this.user?.jid)
-            
-            // Usa la funzione infallibile per capire chi comanda
-            isAdmin = checkIsAdmin(participants, m.sender);
-            isBotAdmin = checkIsAdmin(participants, botJid);
+            isAdmin = participants.some(u => cleanNum(u.id) === pureSender && (u.admin === 'admin' || u.admin === 'superadmin'))
+            isBotAdmin = participants.some(u => cleanNum(u.id) === pureBotNum && (u.admin === 'admin' || u.admin === 'superadmin'))
         }
     }
 
@@ -172,15 +166,43 @@ export async function handler(chatUpdate) {
         m.plugin = name
         m.isCommand = true
 
-        // 🛡️ CONTROLLO PERMESSI DEL PLUGIN
+        // =======================================================
+        // 🔥 IL "DOPPIO CONTROLLO LIVE" SALVAVITA
+        // =======================================================
+        let needsAdmin = plugin.admin && !isAdmin && !isOwner;
+        let needsBotAdmin = plugin.botAdmin && !isBotAdmin;
+
+        // Se la cache dice che non abbiamo i permessi, ma il comando li richiede:
+        if ((needsAdmin || needsBotAdmin) && m.isGroup) {
+            try {
+                // Scansione forzata in tempo reale dai server di WhatsApp!
+                const freshMeta = await this.groupMetadata(m.chat).catch(_ => null);
+                if (freshMeta) {
+                    global.groupCache.set(m.chat, freshMeta, { ttl: 300 }); // Aggiorna la cache
+                    participants = freshMeta.participants;
+                    
+                    // Ricalcola istantaneamente con i dati freschi
+                    isAdmin = participants.some(u => cleanNum(u.id) === pureSender && (u.admin === 'admin' || u.admin === 'superadmin'));
+                    isBotAdmin = participants.some(u => cleanNum(u.id) === pureBotNum && (u.admin === 'admin' || u.admin === 'superadmin'));
+                    
+                    // Aggiorna le variabili per vedere se il blocco è stato superato
+                    needsAdmin = plugin.admin && !isAdmin && !isOwner;
+                    needsBotAdmin = plugin.botAdmin && !isBotAdmin;
+                }
+            } catch (err) {
+                console.error("Errore scansione live metadata:", err);
+            }
+        }
+
+        // 🛡️ CONTROLLO PERMESSI FINALE (Se passa qui, è blindato)
         if (plugin.sam && !isSam) { fail('sam', m, this); continue }
         if (plugin.owner && !isOwner) { fail('owner', m, this); continue }
         if (plugin.mods && !isMods) { fail('mods', m, this); continue } 
         if (plugin.group && !m.isGroup) { fail('group', m, this); continue }
-        if (plugin.admin && !isAdmin && !isOwner) { fail('admin', m, this); continue }
         
-        // Questo check ORA È INFALLIBILE
-        if (plugin.botAdmin && !isBotAdmin) { fail('botAdmin', m, this); continue }
+        // Blocchi superati o attivati in base al controllo live
+        if (needsAdmin) { fail('admin', m, this); continue }
+        if (needsBotAdmin) { fail('botAdmin', m, this); continue }
 
         try {
             await plugin.call(this, m, {
