@@ -265,11 +265,59 @@ export async function handler(chatUpdate) {
                     }
                 }
 
-                if (plugin.disabled && !isOwner) { fail('disabled', m, this); continue }
-                if (user.muto && !isROwner && !isOwner) {
-                    await this.sendMessage(m.chat, { text: `🚫 Non puoi usare i comandi se sei stato mutato!` }, { quoted: m })
-                    return
+                // =======================================================
+                // 🔥 IL CANCELLO: CONTROLLI GLOBALI RIPRISTINATI
+                // =======================================================
+                
+                // 1. MODO ADMIN
+                if (m.isGroup && chat.modoadmin && !isAdmin && !isOwner && !isROwner && !isPrems) {
+                    continue; // Ignora silenziosamente l'utente
                 }
+
+                // 2. SOLO CREATORE
+                if (settings.soloCreatore && !isROwner && !isOwner) continue;
+
+                // 3. CHAT BANNATA
+                if (chat.isBanned && !isROwner && !isOwner) continue;
+
+                // 4. UTENTE BANNATO
+                if (user.banned && !isROwner && !isOwner) {
+                    if (user.antispam < 2) {
+                        await this.sendMessage(m.chat, { text: `🚫 *Sei stato bannato dall'utilizzo del Legam OS.*` }, { quoted: m });
+                        user.antispam++;
+                    }
+                    continue;
+                }
+
+                // 5. UTENTE MUTATO
+                if (user.muto && !isROwner && !isOwner) {
+                    await this.sendMessage(m.chat, { text: `🚫 Non puoi usare i comandi se sei stato mutato!` }, { quoted: m });
+                    continue; // Cambiato da "return" a "continue" per chiudere elegantemente l'azione
+                }
+
+                // 6. ANTI SPAM
+                if (m.isGroup && !isOwner && !isROwner && !isAdmin && chat.antispam) {
+                    const groupData = global.groupSpam[m.chat] || (global.groupSpam[m.chat] = { count: 0, firstCommandTimestamp: 0, isSuspended: false });
+                    const now = Date.now();
+                    if (groupData.isSuspended) continue;
+
+                    if (now - groupData.firstCommandTimestamp > 60000) {
+                        groupData.count = 1;
+                        groupData.firstCommandTimestamp = now;
+                    } else {
+                        groupData.count++;
+                    }
+
+                    if (groupData.count > 8) {
+                        groupData.isSuspended = true;
+                        await this.reply(m.chat, `⚠️  \`Anti-spam comandi\`\nRilevati troppi comandi. Attendi 15 secondi prima di riprovare.`, m);
+                        setTimeout(() => { delete global.groupSpam[m.chat] }, 15000);
+                        continue;
+                    }
+                }
+                // =======================================================
+
+                if (plugin.disabled && !isOwner) { fail('disabled', m, this); continue }
 
                 m.plugin = name
                 m.isCommand = true
