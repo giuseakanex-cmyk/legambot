@@ -1,7 +1,7 @@
 import os from 'os';
 import { performance } from 'perf_hooks';
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, usedPrefix, command }) => {
   try {
     // 1. Inizio misurazione Ping reale (tramite reazione ai server WA)
     const startTime = performance.now();
@@ -13,7 +13,7 @@ let handler = async (m, { conn }) => {
     const uptimeMs = process.uptime() * 1000;
     const uptimeStr = clockString(uptimeMs);
 
-    // 3. Calcolo RAM (Uso esatto del Bot)
+    // 3. Calcolo RAM (Uso esatto del Bot, non di tutto il server)
     const ramBot = (process.memoryUsage().rss / 1024 / 1024).toFixed(2);
 
     // 4. Estetica Legam OS
@@ -31,9 +31,16 @@ let handler = async (m, { conn }) => {
 
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim();
 
-    // 5. Invio Messaggio Sicuro con Canale Fake (Senza vecchi bottoni crashanti)
+    // 5. Invio Messaggio con Bottoni Interattivi e Canale Fake
     await conn.sendMessage(m.chat, {
       text: textMsg,
+      footer: "𝐿𝛴𝐺𝛬𝑀 𝚩𝚯𝐓",
+      buttons: [
+        { buttonId: usedPrefix + "ping", buttonText: { displayText: "📡 𝐑𝐢𝐟𝐚𝐢 𝐏𝐢𝐧𝐠" }, type: 1 },
+        { buttonId: usedPrefix + "menu", buttonText: { displayText: "✧ 𝐌𝐞𝐧𝐮 ✧" }, type: 1 },
+        { buttonId: usedPrefix + "ds", buttonText: { displayText: "🗑️ 𝐒𝐯𝐮𝐨𝐭𝐚 𝐜𝐚𝐜𝐡𝐞" }, type: 1 }
+      ],
+      headerType: 1,
       contextInfo: {
         mentionedJid: [m.sender],
         isForwarded: true,
@@ -65,9 +72,7 @@ function clockString(ms) {
 
 handler.help = ['ping'];
 handler.tags = ['info'];
-
-// 6. COMANDO BLINDATO: Legge SOLO E SOLTANTO "ping"
-handler.command = /^(ping)$/i;
+handler.command = /^(ping|p)$/i;
 
 export default handler;
 
