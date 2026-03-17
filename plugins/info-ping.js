@@ -92,5 +92,3 @@ handler.tags = ['info'];
 handler.command = /^(ping|p)$/i;
 
 export default handler;
-
-
