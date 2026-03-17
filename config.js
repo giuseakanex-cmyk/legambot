@@ -10,15 +10,15 @@ const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf-8'))
 // Prefisso impostato per leggere sia . che !
 global.prefisso = '.!' 
 
-global.sam = ['4915511872095']
+global.sam = ['393291944932']
 global.owner = [
-  ['4915511872095', 'giuse5', true],
+  ['393291944932', 'giuse5', true],
   ['212780909981', 'linda', true],
   ['393780450454', 'giuse2', true],
-  ['4915511872095', 'giusee', true],
+  ['393291944932', 'giusee', true],
 ]
-global.mods = ['4915511872095', '393780450454']
-global.prems = ['4915511872095', '393780450454']
+global.mods = ['393291944932', '393780450454']
+global.prems = ['393291944932', '393780450454']
 
 /*⭑⭒━━━✦❘༻🩸 INFO BOT 🕊️༺❘✦━━━⭒⭑*/
 
