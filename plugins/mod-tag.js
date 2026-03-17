@@ -31,14 +31,14 @@ let handler = async (m, { conn, text, participants }) => {
         }
 
     } catch (e) {
-        console.error('Errore tagmod:', e);
+        console.error('Errore totag:', e);
         m.reply('❌ `Si è verificato un errore durante l\'estrazione del media.`');
     }
 };
 
-handler.help = ['tagmod'];
+handler.help = ['totag'];
 handler.tags = ['moderazione'];
-handler.command = /^tagmod$/i;
+handler.command = /^totag$/i;
 handler.group = true;
 // IL SEGRETO È QUI:
 handler.mods = true; // Solo Owner e Moderatori possono usarlo. Niente limiti di "Admin del gruppo".
