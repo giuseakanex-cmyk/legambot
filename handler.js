@@ -66,8 +66,17 @@ function applyPrefixFromSettings(settings) {
     }
 }
 
-// 🛡️ SCUDO NUMERICO (Per i permessi)
-const cleanNum = (num) => String(num || '').replace(/[^0-9]/g, '')
+// 🛡️ SCUDO NUMERICO: Rimuove QUALSIASI cosa non sia un numero (Indispensabile per WhatsApp)
+const cleanNum = (num) => String(num || '').split('@')[0].split(':')[0].replace(/[^0-9]/g, '')
+
+// 🛡️ FUNZIONE INFALLIBILE PER GLI ADMIN
+const checkIsAdmin = (participants, targetNum) => {
+    let pureTarget = cleanNum(targetNum);
+    return participants.some(u => {
+        let pureU = cleanNum(u.id);
+        return pureU === pureTarget && (u.admin === 'admin' || u.admin === 'superadmin');
+    });
+};
 
 export async function handler(chatUpdate) {
     this.msgqueque = this.msgqueque || []
@@ -104,9 +113,9 @@ export async function handler(chatUpdate) {
     applyPrefixFromSettings(settings)
 
     // =======================================================
-    // 👑 IL SISTEMA IBRIDO LEGAM OS (Permessi Owner/Mod)
+    // 👑 IL SISTEMA GERARCHICO LEGAM OS
     // =======================================================
-    let pureSender = String(m.sender).split('@')[0].split(':')[0]
+    let pureSender = cleanNum(m.sender)
     
     let isSam = (global.sam || []).map(cleanNum).includes(pureSender)
     let isOwner = isSam || m.fromMe || (global.owner || []).map(o => cleanNum(o[0])).includes(pureSender)
@@ -116,20 +125,18 @@ export async function handler(chatUpdate) {
     let isAdmin = false, isBotAdmin = false
     let participants = []
     
-    // =======================================================
-    // 🤖 FIX DEFINITIVO BOT ADMIN
-    // =======================================================
-    // Estraggo l'ID puro del bot, senza @ e senza :
-    const pureBotID = String(this.user?.id || this.user?.jid).split('@')[0].split(':')[0]
-
+    // 🔥 CONTROLLO ADMIN BLINDATO AL 1000%
     if (m.isGroup) {
         let groupMetadata = global.groupCache.get(m.chat) || await fetchGroupMetadataWithRetry(this, m.chat)
         if (groupMetadata) {
             participants = groupMetadata.participants
             
-            // Confronto INFALLIBILE: taglia via tutto e confronta solo i numeri puri per te e per il bot
-            isAdmin = participants.some(u => String(u.id).split('@')[0].split(':')[0] === pureSender && (u.admin === 'admin' || u.admin === 'superadmin'))
-            isBotAdmin = participants.some(u => String(u.id).split('@')[0].split(':')[0] === pureBotID && (u.admin === 'admin' || u.admin === 'superadmin'))
+            // Identità sicura del bot estratta dalla libreria
+            let botJid = this.decodeJid(this.user?.id || this.user?.jid)
+            
+            // Usa la funzione infallibile per capire chi comanda
+            isAdmin = checkIsAdmin(participants, m.sender);
+            isBotAdmin = checkIsAdmin(participants, botJid);
         }
     }
 
@@ -170,9 +177,9 @@ export async function handler(chatUpdate) {
         if (plugin.owner && !isOwner) { fail('owner', m, this); continue }
         if (plugin.mods && !isMods) { fail('mods', m, this); continue } 
         if (plugin.group && !m.isGroup) { fail('group', m, this); continue }
-        if (plugin.admin && !isAdmin) { fail('admin', m, this); continue }
+        if (plugin.admin && !isAdmin && !isOwner) { fail('admin', m, this); continue }
         
-        // Questo non fallirà mai più se il bot ha la targhetta admin su WhatsApp!
+        // Questo check ORA È INFALLIBILE
         if (plugin.botAdmin && !isBotAdmin) { fail('botAdmin', m, this); continue }
 
         try {
@@ -198,18 +205,17 @@ global.dfail = async (type, m, conn) => {
     const nome = m.pushName || 'utente'
     const etarandom = Math.floor(Math.random() * 21) + 13
     const msg = {
-        sam: '⊹ ࣪ ˖ ✦ ━━ 𝐀𝐂𝐂𝐄𝐒𝐒𝐎 𝐍𝐄𝐆𝐀𝐓𝐎 ━━ ✦ ˖ ࣪ ⊹\n\n👑 *𝐂𝐎𝐌𝐀𝐍𝐃𝐎 𝐀𝐒𝐒𝐎𝐋𝐔𝐓𝐎*\n⟡ _Solo il Creatore può impartire questo ordine._',
+        sam: '⊹ ࣪ ˖ ✦ ━━ 𝐀𝐂𝐂𝐄𝐒𝐒𝐎 𝐍𝐄𝐆𝐀𝐓𝐎 ━━ ✦ ˖ ࣪ ⊹\n\n👑 *𝐂𝐎𝐌𝐀𝐍𝐃𝐎 𝐀𝐒𝐒𝐎𝐋𝐔𝐓𝐎*\n⟡ _Solo Giuse può impartire questo ordine._',
         owner: '⊹ ࣪ ˖ ✦ ━━ 𝐀𝐂𝐂𝐄𝐒𝐒𝐎 𝐍𝐄𝐆𝐀𝐓𝐎 ━━ ✦ ˖ ࣪ ⊹\n\n🛡️ *𝐒𝐎𝐋𝐎 𝐎𝐖𝐍𝐄𝐑*\n⟡ _Non sei degno. Solo gli Owner possono procedere._',
         mods: '⊹ ࣪ ˖ ✦ ━━ 𝐀𝐂𝐂𝐄𝐒𝐒𝐎 𝐍𝐄𝐆𝐀𝐓𝐎 ━━ ✦ ˖ ࣪ ⊹\n\n⚙️ *𝐒𝐎𝐋𝐎 𝐌𝐎𝐃𝐄𝐑𝐀𝐓𝐎𝐑𝐈*\n⟡ _Comando riservato ai Moderatori di Legam OS._',
         premium: '⊹ ࣪ ˖ ✦ ━━ 𝐀𝐂𝐂𝐄𝐒𝐒𝐎 𝐍𝐄𝐆𝐀𝐓𝐎 ━━ ✦ ˖ ࣪ ⊹\n\n💎 *𝐔𝐓𝐄𝐍𝐓𝐄 𝐏𝐑𝐄𝐌𝐈𝐔𝐌*\n⟡ _Sistema bloccato. Richiesto lo status Premium._',
         group: '⊹ ࣪ ˖ ✦ ━━ 𝐄 𝐑 𝐑 𝐎 𝐑 𝐄 ━━ ✦ ˖ ࣪ ⊹\n\n👥 *𝐒𝐎𝐋𝐎 𝐆𝐑𝐔𝐏𝐏𝐈*\n⟡ _Questa magia può essere evocata solo nei gruppi._',
         private: '⊹ ࣪ ˖ ✦ ━━ 𝐄 𝐑 𝐑 𝐎 𝐑 𝐄 ━━ ✦ ˖ ࣪ ⊹\n\n📩 *𝐒𝐎𝐋𝐎 𝐏𝐑𝐈𝐕𝐀𝐓𝐎*\n⟡ _Comando eseguibile unicamente in chat privata._',
         admin: '⊹ ࣪ ˖ ✦ ━━ 𝐀𝐂𝐂𝐄𝐒𝐒𝐎 𝐍𝐄𝐆𝐀𝐓𝐎 ━━ ✦ ˖ ࣪ ⊹\n\n🛠️ *𝐒𝐎𝐋𝐎 𝐀𝐃𝐌𝐈𝐍*\n⟡ _Comando riservato agli Amministratori del gruppo._',
-        botAdmin: '⊹ ࣪ ˖ ✦ ━━ 𝐄 𝐑 𝐑 𝐎 𝐑 𝐄 ━━ ✦ ˖ ࣪ ⊹\n\n🤖 *𝐁𝐎𝐓 𝐍𝐎𝐍 𝐀𝐃𝐌𝐈𝐍*\n⟡ _Devi prima nominarmi Amministratore per agire._',
+        botAdmin: '⊹ ࣪ ˖ ✦ ━━ 𝐄 𝐑 𝐑 𝐎 𝐑 𝐄 ━━ ✦ ˖ ࣪ ⊹\n\n🤖 *𝐁𝐎𝐓 𝐍𝐎𝐍 𝐀𝐃𝐌𝐈𝐍*\n⟡ _Devi prima farmi Admin per permettermi di agire._',
         unreg: `⊹ ࣪ ˖ ✦ ━━ 𝐒 𝐈 𝐒 𝐓 𝐄 𝐌 𝐀 ━━ ✦ ˖ ࣪ ⊹\n\n📛 *𝐍𝐎𝐍 𝐑𝐈𝐂𝐎𝐍𝐎𝐒𝐂𝐈𝐔𝐓𝐎*\n⟡ _Utente non presente nel database di Legam OS._\n⟡ _Effettua la registrazione per sbloccare il Core._\n\n> \`Formato:\` .reg nome età\n> \`Esempio:\` .reg ${nome} ${etarandom}`,
         disabled: '⊹ ࣪ ˖ ✦ ━━ 𝐄 𝐑 𝐑 𝐎 𝐑 𝐄 ━━ ✦ ˖ ࣪ ⊹\n\n🚫 *𝐃𝐈𝐒𝐀𝐁𝐈𝐋𝐈𝐓𝐀𝐓𝐎*\n⟡ _Questo comando è in manutenzione o disattivato._'
     }[type]
-    
     if (msg) return conn.sendMessage(m.chat, { text: msg + '\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦' }, { quoted: m })
 }
 
