@@ -66,7 +66,7 @@ function applyPrefixFromSettings(settings) {
     }
 }
 
-// 🛡️ SCUDO NUMERICO (Usato SOLO per config.js)
+// 🛡️ SCUDO NUMERICO (Per i permessi)
 const cleanNum = (num) => String(num || '').replace(/[^0-9]/g, '')
 
 export async function handler(chatUpdate) {
@@ -97,10 +97,6 @@ export async function handler(chatUpdate) {
     if (!global.db.data) await global.loadDatabase()
     
     const normalizedSender = this.decodeJid(m.sender)
-    
-    // Identità reale del Bot (come faceva Varebot)
-    const normalizedBot = this.decodeJid(this.user?.id || this.user?.jid)
-
     const user = global.db.data.users[normalizedSender] || (global.db.data.users[normalizedSender] = { ...defuser, name: m.pushName || '?' })
     const chat = chatz(m.chat)
     const settings = global.db.data.settings?.[this.user.jid] || (global.db.data.settings[this.user.jid] = { anticall: true, status: 0 })
@@ -108,11 +104,10 @@ export async function handler(chatUpdate) {
     applyPrefixFromSettings(settings)
 
     // =======================================================
-    // 👑 IL SISTEMA IBRIDO LEGAM OS
+    // 👑 IL SISTEMA IBRIDO LEGAM OS (Permessi Owner/Mod)
     // =======================================================
-    // 1. Identità Owner e Mods tramite Scudo Numerico
-    let pureSender = cleanNum(String(m.sender).split('@')[0].split(':')[0])
-
+    let pureSender = String(m.sender).split('@')[0].split(':')[0]
+    
     let isSam = (global.sam || []).map(cleanNum).includes(pureSender)
     let isOwner = isSam || m.fromMe || (global.owner || []).map(o => cleanNum(o[0])).includes(pureSender)
     let isMods = isOwner || (global.mods || []).map(cleanNum).includes(pureSender)
@@ -121,15 +116,20 @@ export async function handler(chatUpdate) {
     let isAdmin = false, isBotAdmin = false
     let participants = []
     
-    // 2. Controllo Amministratori Nativo (Come Varebot, sicuro per +33)
+    // =======================================================
+    // 🤖 FIX DEFINITIVO BOT ADMIN
+    // =======================================================
+    // Estraggo l'ID puro del bot, senza @ e senza :
+    const pureBotID = String(this.user?.id || this.user?.jid).split('@')[0].split(':')[0]
+
     if (m.isGroup) {
         let groupMetadata = global.groupCache.get(m.chat) || await fetchGroupMetadataWithRetry(this, m.chat)
         if (groupMetadata) {
             participants = groupMetadata.participants
             
-            // Confronto esatto usando decodeJid per non perdere pezzi di codice WhatsApp
-            isAdmin = participants.some(u => this.decodeJid(u.id) === normalizedSender && (u.admin === 'admin' || u.admin === 'superadmin'))
-            isBotAdmin = participants.some(u => this.decodeJid(u.id) === normalizedBot && (u.admin === 'admin' || u.admin === 'superadmin'))
+            // Confronto INFALLIBILE: taglia via tutto e confronta solo i numeri puri per te e per il bot
+            isAdmin = participants.some(u => String(u.id).split('@')[0].split(':')[0] === pureSender && (u.admin === 'admin' || u.admin === 'superadmin'))
+            isBotAdmin = participants.some(u => String(u.id).split('@')[0].split(':')[0] === pureBotID && (u.admin === 'admin' || u.admin === 'superadmin'))
         }
     }
 
@@ -170,11 +170,9 @@ export async function handler(chatUpdate) {
         if (plugin.owner && !isOwner) { fail('owner', m, this); continue }
         if (plugin.mods && !isMods) { fail('mods', m, this); continue } 
         if (plugin.group && !m.isGroup) { fail('group', m, this); continue }
+        if (plugin.admin && !isAdmin) { fail('admin', m, this); continue }
         
-        // God Mode: se sei Owner, scavalchi la richiesta di essere Admin
-        if (plugin.admin && !isAdmin && !isOwner) { fail('admin', m, this); continue }
-        
-        // Controllo Bot Admin perfetto per il numero francese
+        // Questo non fallirà mai più se il bot ha la targhetta admin su WhatsApp!
         if (plugin.botAdmin && !isBotAdmin) { fail('botAdmin', m, this); continue }
 
         try {
@@ -211,6 +209,7 @@ global.dfail = async (type, m, conn) => {
         unreg: `⊹ ࣪ ˖ ✦ ━━ 𝐒 𝐈 𝐒 𝐓 𝐄 𝐌 𝐀 ━━ ✦ ˖ ࣪ ⊹\n\n📛 *𝐍𝐎𝐍 𝐑𝐈𝐂𝐎𝐍𝐎𝐒𝐂𝐈𝐔𝐓𝐎*\n⟡ _Utente non presente nel database di Legam OS._\n⟡ _Effettua la registrazione per sbloccare il Core._\n\n> \`Formato:\` .reg nome età\n> \`Esempio:\` .reg ${nome} ${etarandom}`,
         disabled: '⊹ ࣪ ˖ ✦ ━━ 𝐄 𝐑 𝐑 𝐎 𝐑 𝐄 ━━ ✦ ˖ ࣪ ⊹\n\n🚫 *𝐃𝐈𝐒𝐀𝐁𝐈𝐋𝐈𝐓𝐀𝐓𝐎*\n⟡ _Questo comando è in manutenzione o disattivato._'
     }[type]
+    
     if (msg) return conn.sendMessage(m.chat, { text: msg + '\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦' }, { quoted: m })
 }
 
