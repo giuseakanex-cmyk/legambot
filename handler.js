@@ -66,8 +66,8 @@ function applyPrefixFromSettings(settings) {
     }
 }
 
-// 🛡️ ESTRATTORE NUMERICO ASSOLUTO
-const numPuro = (id) => String(id || '').split('@')[0].split(':')[0].replace(/[^0-9]/g, '');
+// Estrae solo numeri puri
+const pureNum = (id) => String(id || '').replace(/[^0-9]/g, '');
 
 export async function handler(chatUpdate) {
     this.msgqueque = this.msgqueque || []
@@ -97,36 +97,33 @@ export async function handler(chatUpdate) {
     if (!global.db.data) await global.loadDatabase()
     
     const normalizedSender = this.decodeJid(m.sender)
+    const normalizedBot = this.decodeJid(this.user?.id || this.user?.jid || '')
+    
     const user = global.db.data.users[normalizedSender] || (global.db.data.users[normalizedSender] = { ...defuser, name: m.pushName || '?' })
     const chat = chatz(m.chat)
     const settings = global.db.data.settings?.[this.user.jid] || (global.db.data.settings[this.user.jid] = { anticall: true, status: 0 })
     
     applyPrefixFromSettings(settings)
 
-    // =======================================================
-    // 👑 IDENTITÀ BLINDATE LEGAM OS
-    // =======================================================
-    let mittente = numPuro(m.sender);
+    // 👑 IDENTITÀ
+    let senderClean = pureNum(normalizedSender);
     
-    let isSam = (global.sam || []).map(numPuro).includes(mittente);
-    let isOwner = isSam || m.fromMe || (global.owner || []).some(o => numPuro(o[0]) === mittente);
-    let isMods = isOwner || (global.mods || []).map(numPuro).includes(mittente);
-    let isPrems = isOwner || (global.prems || []).map(numPuro).includes(mittente);
+    let isSam = (global.sam || []).map(pureNum).includes(senderClean);
+    let isOwner = isSam || m.fromMe || (global.owner || []).some(o => pureNum(o[0]) === senderClean);
+    let isMods = isOwner || (global.mods || []).map(pureNum).includes(senderClean);
+    let isPrems = isOwner || (global.prems || []).map(pureNum).includes(senderClean);
 
-    let isAdmin = false;
+    let isAdmin = false, isBotAdmin = false;
     let participants = [];
 
+    // LETTURA ADMIN NATIVA (La stessa che usa il terminale per dire "Admin")
     if (m.isGroup) {
         let groupMetadata = global.groupCache.get(m.chat) || await fetchGroupMetadataWithRetry(this, m.chat)
         if (groupMetadata) {
             participants = groupMetadata.participants || [];
-            isAdmin = participants.some(u => numPuro(u.id) === mittente && (u.admin === 'admin' || u.admin === 'superadmin'));
+            isAdmin = participants.some(u => this.decodeJid(u.id) === normalizedSender && (u.admin === 'admin' || u.admin === 'superadmin'));
+            isBotAdmin = participants.some(u => this.decodeJid(u.id) === normalizedBot && (u.admin === 'admin' || u.admin === 'superadmin'));
         }
-    }
-
-    // ⚡ GOD MODE NATURA: Se sei Owner, per il bot sei SEMPRE Admin.
-    if (isOwner) {
-        isAdmin = true;
     }
 
     if (chat.modoadmin && !isOwner && !isMods && !isAdmin) return 
@@ -161,34 +158,38 @@ export async function handler(chatUpdate) {
         m.plugin = name
         m.isCommand = true
 
-        // 🛡️ CONTROLLO PERMESSI DEL PLUGIN
+        // 🛡️ CONTROLLI PERMESSI
         if (plugin.sam && !isSam) { fail('sam', m, this); continue }
         if (plugin.owner && !isOwner) { fail('owner', m, this); continue }
         if (plugin.mods && !isMods) { fail('mods', m, this); continue } 
         if (plugin.group && !m.isGroup) { fail('group', m, this); continue }
-        if (plugin.admin && !isAdmin) { fail('admin', m, this); continue }
-
-        // =======================================================
-        // 🔥 BYPASS ASSOLUTO DEL "BOT ADMIN"
-        // Abbiamo rimosso l'auto-blocco. Il bot proverà SEMPRE a eseguire l'azione.
-        // Se WhatsApp lo respinge perché non è admin, catturiamo l'errore sotto.
-        // =======================================================
+        
+        // ⚡ GOD MODE
+        if (plugin.admin && !isAdmin && !isOwner) { fail('admin', m, this); continue }
+        
+        // 🤖 CONTROLLO BOT ADMIN (Se dice false, fa check live)
+        if (plugin.botAdmin && !isBotAdmin && m.isGroup) {
+            const freshMeta = await this.groupMetadata(m.chat).catch(() => null);
+            if (freshMeta) {
+                global.groupCache.set(m.chat, freshMeta, { ttl: 300 });
+                isBotAdmin = freshMeta.participants.some(u => this.decodeJid(u.id) === normalizedBot && (u.admin === 'admin' || u.admin === 'superadmin'));
+            }
+            if (!isBotAdmin) {
+                fail('botAdmin', m, this); 
+                continue;
+            }
+        }
 
         try {
             await plugin.call(this, m, {
                 match, usedPrefix, noPrefix, args, command, text, conn: this, participants,
-                isSam, isOwner, isMods, isAdmin, isBotAdmin: true, isPrems // Gli passiamo "true" per fregarla
+                isSam, isOwner, isMods, isAdmin, isBotAdmin, isPrems
             })
             if (plugin.euro) user.euro -= plugin.euro
         } catch (e) {
-            // Se WhatsApp blocca l'azione perché il bot non è admin, lo intercettiamo qui!
-            const errorString = String(e).toLowerCase();
-            if (errorString.includes('not-authorized') || errorString.includes('forbidden') || errorString.includes('admin')) {
-                fail('botAdmin', m, this);
-            } else {
-                console.error(`[ERRORE] Plugin ${name}:`, e)
-                m.reply('『 ⚠️ 』 Errore interno nel comando.')
-            }
+            // NESSUN FALSO ALLARME: Stampiamo l'errore reale
+            console.error(`[ERRORE DI ESECUZIONE] Plugin ${name}:`, e)
+            m.reply(`『 ⚠️ 』 \`Errore di esecuzione:\`\n${String(e)}`)
         }
         break 
     }
