@@ -40,7 +40,6 @@ global.insta = 'https://www.instagram.com/giuse'
 
 /*⭑⭒━━━✦❘🗝️ API KEYS 🌍༺❘✦━━━⭒⭑*/
 
-// Chiavi mantenute esattamente come le avevi tu
 global.APIKeys = {
     spotifyclientid: 'varebot',
     spotifysecret: 'varebot',
@@ -62,6 +61,35 @@ global.APIKeys = {
 
 global.multiplier = 1
 
+/*⭑⭒━━━✦❘༻ 🎨 ESTETICA GLOBALE LEGAM OS 🎨 ༺❘✦━━━⭒⭑*/
+
+// La tua immagine caricata su ibb.co
+global.logoLegam = 'https://i.ibb.co/gMDMVjJn/IMG-1824.png'
+
+// La scheda grafica personalizzata che rimpiazza Varebot
+global.rcanal = {
+    contextInfo: {
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+            newsletterJid: "120363233544482011@newsletter",
+            newsletterName: "✨.✦★彡 𝐋𝐞𝐠𝐚𝐦 𝐎𝐒 𝐂𝐨𝐫𝐞 Ξ★✦.•",
+            serverMessageId: 100
+        },
+        externalAdReply: {
+            showAdAttribution: true,
+            title: "𝐋 𝐄 𝐆 𝐀 𝐌   𝐎 𝐒",
+            body: "➤ Sviluppato da Giuse",
+            mediaType: 1, // 1 per miniatura piccola quadrata, 2 per immagine grande rettangolare
+            renderLargerThumbnail: false,
+            thumbnailUrl: global.logoLegam,
+            sourceUrl: global.insta // Cliccando sulla scheda si apre il tuo Instagram
+        }
+    }
+}
+
+// Applica questa grafica ovunque il bot usi 'global.fake' o 'global.rcanal'
+global.fake = global.rcanal;
+
 /*⭑⭒━━━✦❘༻📦 RELOAD 📦༺❘✦━━━⭒⭑*/
 
 let filePath = fileURLToPath(import.meta.url)
@@ -79,3 +107,5 @@ const reloadConfig = async () => {
 watchFile(filePath, reloadConfig)
 
 export default {}
+
+
