@@ -7,7 +7,7 @@ let handler = async (m, { conn, command, usedPrefix }) => {
 
   // Se non ci sono dati o i messaggi sono zero
   if (!dati || dati.totali === 0 || Object.keys(dati.utenti).length === 0) {
-    return m.reply("✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 𝐋 𝐄 𝐆 𝐀 𝐌  𝐑 𝐀 𝐍 𝐊 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n⟡ _Il silenzio regna. Nessun messaggio registrato oggi._\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦");
+    return m.reply("╭── •✧ 𝐋𝐄𝐆𝐀𝐌 𝐑𝐀𝐍𝐊𝐈𝐍𝐆 ✧• ──╮\n\n⟡ _Nessun dato rilevato oggi._\n\n╰── •✧ 𝐋 𝐄 𝐆 𝐀 𝐌  𝐎 𝐒 ✧• ──╯");
   }
 
   // Determina quanti utenti mostrare
@@ -19,13 +19,13 @@ let handler = async (m, { conn, command, usedPrefix }) => {
     .sort((a, b) => b[1].conteggio - a[1].conteggio)
     .slice(0, limite);
 
-  const medaglie = ['🥇', '🥈', '🥉', '🏅', '🏅', '🏅', '🏅', '🏅', '🏅', '🏅'];
+  const medaglie = ['🥇 1°', '🥈 2°', '🥉 3°', '🏅 4°', '🏅 5°', '🏅 6°', '🏅 7°', '🏅 8°', '🏅 9°', '🏅 10°'];
 
-  let testo = `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 𝐋 𝐄 𝐆 𝐀 𝐌  𝐑 𝐀 𝐍 𝐊 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n`;
-  testo += `『 📊 』 𝐒 𝐓 𝐀 𝐓 𝐈 𝐒 𝐓 𝐈 𝐂 𝐇 𝐄\n`;
-  testo += `· 𝐌𝐞𝐬𝐬𝐚𝐠𝐠𝐢 𝐓𝐨𝐭𝐚𝐥𝐢 ➻ *${dati.totali}*\n`;
-  testo += `· 𝐀𝐠𝐠𝐢𝐨𝐫𝐧𝐚𝐦𝐞𝐧𝐭𝐨 ➻ 𝐓𝐞𝐦𝐩𝐨 𝐑𝐞𝐚𝐥𝐞\n\n`;
-  testo += `『 🏆 』 𝐓 𝐎 𝐏  ${limite}  𝐃 𝐈  𝐎 𝐆 𝐆 𝐈\n\n`;
+  let testo = `╭── •✧ 𝐋𝐄𝐆𝐀𝐌 𝐑𝐀𝐍𝐊𝐈𝐍𝐆 ✧• ──╮\n\n`;
+  testo += `📊 𝐒𝐓𝐀𝐓𝐈𝐒𝐓𝐈𝐂𝐇𝐄 𝐀𝐓𝐓𝐔𝐀𝐋𝐈\n`;
+  testo += `│ 💬 Totale Rete: *${dati.totali}*\n`;
+  testo += `│ ⏱️ Reset: Mezzanotte\n\n`;
+  testo += `🏆 𝐓𝐎𝐏 𝐀𝐓𝐓𝐈𝐕𝐈𝐓𝐀̀\n\n`;
 
   let menzioni = [];
 
@@ -33,14 +33,17 @@ let handler = async (m, { conn, command, usedPrefix }) => {
     let id = u[0];
     let datiUtente = u[1];
     menzioni.push(id);
-    testo += `${medaglie[i]} @${id.split("@")[0]}\n`;
-    testo += `   ⟡ _${datiUtente.conteggio} messaggi_\n\n`;
+    
+    // Grammatica corretta per Msg
+    let labelMsg = datiUtente.conteggio === 1 ? 'Msg' : 'Msg';
+
+    testo += `${medaglie[i]} ➻ @${id.split("@")[0]}\n`;
+    testo += `│ ✧ ${datiUtente.conteggio} ${labelMsg}\n\n`;
   });
 
-  // Istruzioni estetiche Legam OS
-  testo += `> _Usa ${usedPrefix}top5 o ${usedPrefix}top10 per espandere_\n\n`;
-  testo += `👑 𝐎𝐖𝐍𝐄𝐑 ➤ 𝐆𝐈𝐔𝐒𝚵\n`;
-  testo += `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`;
+  testo += `╰── •✧ 𝐋 𝐄 𝐆 𝐀 𝐌  𝐎 𝐒 ✧• ──╯\n`;
+  testo += `👑 𝐎𝐰𝐧𝐞𝐫: 𝐆𝐢𝐮𝐬𝐞\n`;
+  testo += `💡 Tip: Usa ${usedPrefix}top5 o ${usedPrefix}top10`;
 
   await conn.sendMessage(chatId, {
     text: testo,
@@ -65,50 +68,38 @@ handler.group = true;
 // =========================================================
 // MOTORE DI CONTEGGIO ASSOLUTO (Infallibile)
 // =========================================================
-// Questo blocco si attacca direttamente alla connessione del bot
-// aggirando handler.js, quindi è IMPOSSIBILE che non conti i messaggi.
 if (!global.contatoreMessaggiAttivo) {
     global.archivioMessaggi = global.archivioMessaggi || {};
 
     global.conn.ev.on('messages.upsert', async ({ messages }) => {
         try {
             let msg = messages[0];
-            // Ignora messaggi vuoti o inviati dal bot stesso
             if (!msg || !msg.message || msg.key.fromMe) return;
-            
-            // Conta SOLO i messaggi che arrivano dai gruppi
             if (!msg.key.remoteJid || !msg.key.remoteJid.endsWith('@g.us')) return;
 
             let chat = msg.key.remoteJid;
             let user = msg.key.participant || msg.key.remoteJid;
             let nome = msg.pushName || 'Utente';
 
-            // Inizializza il gruppo se non esiste nel database
             if (!global.archivioMessaggi[chat]) {
                 global.archivioMessaggi[chat] = { totali: 0, utenti: {} };
             }
 
-            // Aggiungi +1 ai totali del gruppo
             global.archivioMessaggi[chat].totali += 1;
 
-            // Inizializza l'utente se non esiste
             if (!global.archivioMessaggi[chat].utenti[user]) {
                 global.archivioMessaggi[chat].utenti[user] = { nome: nome, conteggio: 0 };
             }
             
-            // Aggiungi +1 ai messaggi dell'utente
             global.archivioMessaggi[chat].utenti[user].conteggio += 1;
         } catch (e) {
             console.error("Errore nel sensore contatore:", e);
         }
     });
 
-    // =========================================================
-    // AUTOMAZIONE MEZZANOTTE
-    // =========================================================
+    // AUTOMAZIONE MEZZANOTTE CON NUOVA GRAFICA
     setInterval(async () => {
         let now = new Date();
-        // Quando scatta la mezzanotte esatta (00:00)
         if (now.getHours() === 0 && now.getMinutes() === 0) {
             let gruppi = Object.keys(global.archivioMessaggi);
 
@@ -121,19 +112,21 @@ if (!global.contatoreMessaggiAttivo) {
                     .sort((a, b) => b[1].conteggio - a[1].conteggio)
                     .slice(0, 3);
 
-                let testo = `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 𝐋 𝐄 𝐆 𝐀 𝐌  𝐏 𝐎 𝐃 𝐈 𝐔 𝐌 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n`;
-                testo += `『 🏁 』 𝐅 𝐈 𝐍 𝐄  𝐆 𝐈 𝐎 𝐑 𝐍 𝐀 𝐓 𝐀\n`;
-                testo += `· 𝐌𝐞𝐬𝐬𝐚𝐠𝐠𝐢 𝐓𝐨𝐭𝐚𝐥𝐢 ➻ *${dati.totali}*\n\n`;
+                let testo = `╭── •✧ 𝐋𝐄𝐆𝐀𝐌 𝐏𝐎𝐃𝐈𝐔𝐌 ✧• ──╮\n\n`;
+                testo += `🏁 𝐅𝐈𝐍𝐄 𝐆𝐈𝐎𝐑𝐍𝐀𝐓𝐀\n`;
+                testo += `│ 💬 Totale Rete: *${dati.totali}*\n\n`;
 
-                const medaglie = ['🥇', '🥈', '🥉'];
+                const medaglie = ['🥇 1°', '🥈 2°', '🥉 3°'];
                 let menzioni = [];
 
                 classifica.forEach((u, i) => {
                     menzioni.push(u[0]);
-                    testo += `${medaglie[i]} @${u[0].split("@")[0]} ➻ ${u[1].conteggio} msg\n`;
+                    testo += `${medaglie[i]} ➻ @${u[0].split("@")[0]}\n`;
+                    testo += `│ ✧ ${u[1].conteggio} Msg\n\n`;
                 });
 
-                testo += `\n> _Il database è stato azzerato per il nuovo giorno._\n\n👑 𝐎𝐖𝐍𝐄𝐑 ➤ 𝐆𝐈𝐔𝐒𝚵\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`;
+                testo += `╰── •✧ 𝐋 𝐄 𝐆 𝐀 𝐌  𝐎 𝐒 ✧• ──╯\n`;
+                testo += `> _Il database è stato azzerato per il nuovo giorno._`;
 
                 await global.conn.sendMessage(gid, {
                     text: testo,
@@ -148,14 +141,14 @@ if (!global.contatoreMessaggiAttivo) {
                     }
                 });
 
-                // Azzera i conteggi del gruppo
                 global.archivioMessaggi[gid] = { totali: 0, utenti: {} };
             }
         }
-    }, 60000); // Controlla l'orario ogni minuto
+    }, 60000);
 
     global.contatoreMessaggiAttivo = true;
 }
 
 export default handler;
+
 
