@@ -1,22 +1,21 @@
 import os from 'os';
 import { performance } from 'perf_hooks';
+import { generateWAMessageFromContent, proto } from '@realvare/baileys';
 
-let handler = async (m, { conn, usedPrefix, command }) => {
+let handler = async (m, { conn, usedPrefix }) => {
   try {
-    // 1. Inizio misurazione Ping reale (tramite reazione ai server WA)
+    // 1. Inizio misurazione Ping reale
     const startTime = performance.now();
     await conn.sendMessage(m.chat, { react: { text: '📡', key: m.key } });
     const endTime = performance.now();
     const latenza = (endTime - startTime).toFixed(4);
 
-    // 2. Calcolo Uptime
+    // 2. Calcolo Uptime e RAM
     const uptimeMs = process.uptime() * 1000;
     const uptimeStr = clockString(uptimeMs);
-
-    // 3. Calcolo RAM (Uso esatto del Bot, non di tutto il server)
     const ramBot = (process.memoryUsage().rss / 1024 / 1024).toFixed(2);
 
-    // 4. Estetica Legam OS
+    // 3. Estetica Legam OS
     const textMsg = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 ·   𝐋 𝐄 𝐆 𝐀 𝐌  𝐁 𝐎 𝐓   ·
@@ -31,26 +30,50 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim();
 
-    // 5. Invio Messaggio con Bottoni Interattivi e Canale Fake
-    await conn.sendMessage(m.chat, {
-      text: textMsg,
-      footer: "𝐿𝛴𝐺𝛬𝑀 𝚩𝚯𝐓",
-      buttons: [
-        { buttonId: usedPrefix + "ping", buttonText: { displayText: "📡 𝐑𝐢𝐟𝐚𝐢 𝐏𝐢𝐧𝐠" }, type: 1 },
-        { buttonId: usedPrefix + "menu", buttonText: { displayText: "✧ 𝐌𝐞𝐧𝐮 ✧" }, type: 1 },
-        { buttonId: usedPrefix + "ds", buttonText: { displayText: "🗑️ 𝐒𝐯𝐮𝐨𝐭𝐚 𝐜𝐚𝐜𝐡𝐞" }, type: 1 }
-      ],
-      headerType: 1,
-      contextInfo: {
-        mentionedJid: [m.sender],
-        isForwarded: true,
-        forwardedNewsletterMessageInfo: {
-          newsletterJid: '120363233544482011@newsletter',
-          newsletterName: "✨.✦★彡 Ping by Giuse Ξ★✦.•",
-          serverMessageId: 100
+    // 4. Creazione del Messaggio Interattivo (Native Flow Buttons)
+    const msg = generateWAMessageFromContent(m.chat, {
+      viewOnceMessage: {
+        message: {
+            messageContextInfo: {
+              deviceListMetadata: {},
+              deviceListMetadataVersion: 2
+            },
+            interactiveMessage: proto.Message.InteractiveMessage.create({
+              body: proto.Message.InteractiveMessage.Body.create({ text: textMsg }),
+              footer: proto.Message.InteractiveMessage.Footer.create({ text: "𝐿𝛴𝐺𝛬𝑀 𝚩𝚯𝐓" }),
+              header: proto.Message.InteractiveMessage.Header.create({ title: "", subtitle: "", hasMediaAttachment: false }),
+              contextInfo: {
+                mentionedJid: [m.sender],
+                isForwarded: true,
+                forwardedNewsletterMessageInfo: {
+                  newsletterJid: '120363233544482011@newsletter',
+                  newsletterName: "✨.✦★彡 Ping by Giuse Ξ★✦.•",
+                  serverMessageId: 100
+                }
+              },
+              nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+                buttons: [
+                  {
+                    "name": "quick_reply",
+                    "buttonParamsJson": `{"display_text":"📡 𝐑𝐢𝐟𝐚𝐢 𝐏𝐢𝐧𝐠","id":"${usedPrefix}ping"}`
+                  },
+                  {
+                    "name": "quick_reply",
+                    "buttonParamsJson": `{"display_text":"✧ 𝐌𝐞𝐧𝐮 ✧","id":"${usedPrefix}menu"}`
+                  },
+                  {
+                    "name": "quick_reply",
+                    "buttonParamsJson": `{"display_text":"🗑️ 𝐒𝐯𝐮𝐨𝐭𝐚 𝐜𝐚𝐜𝐡𝐞","id":"${usedPrefix}ds"}`
+                  }
+                ]
+              })
+            })
         }
       }
     }, { quoted: m });
+
+    // 5. Invio Forzato tramite Relay
+    await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id });
 
     // Conferma finale con spunta verde
     await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
