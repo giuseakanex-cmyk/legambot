@@ -1,63 +1,63 @@
-import { xpRange } from '../lib/levelling.js'
-const defaultMenu = {
-  before: ``.trimStart(),
-  header: 'ㅤㅤ⋆｡˚『 ╭ \`MENU CREATORE\` ╯ 』˚｡⋆\n╭',
-  body: '│ ➤『🕊️』 %cmd',
-  footer: '*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*\n',
-  after: `> 🩸 𓆩⟡𓆪 𝙫𝙖𝙧𝙚𝙗𝙤𝙩 𓆩⟡𓆪`,                   
-}
-const handler = async (m, { conn, usedPrefix: _p }) => {
-  const tags = { 'creatore': 'MenuOwner' }
-
+let handler = async (m, { conn, usedPrefix: _p }) => {
   try {
-    await conn.sendPresenceUpdate('composing', m.chat)
+    // Reazione di caricamento (La corona del Re)
+    await conn.sendMessage(m.chat, { react: { text: '👑', key: m.key } });
     
-    const { level } = global.db.data.users[m.sender]
-    const { min, xp, max } = xpRange(level, global.multiplier)
-    const help = Object.values(global.plugins)
+    // Filtra tutti i plugin che hanno 'creatore' tra i tags
+    const ownerList = Object.values(global.plugins)
       .filter(plugin => !plugin.disabled && plugin.tags && plugin.tags.includes('creatore'))
       .map(plugin => ({
         help: Array.isArray(plugin.help) ? plugin.help : [plugin.help],
         prefix: 'customPrefix' in plugin
-      }))
+      }));
 
-    const text = [
-      defaultMenu.before,
-      defaultMenu.header.replace(/%category/g, tags['creatore']),
-      help.map(menu => 
-        menu.help.map(cmd => 
-          defaultMenu.body.replace(/%cmd/g, menu.prefix ? cmd : _p + cmd)
-        ).join('\n')
-      ).join('\n'),
-      defaultMenu.footer,
-      defaultMenu.after
-    ].join('\n')
+    // Costruzione dell'estetica Legam OS
+    let textMenu = `
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
+· 𝐋 𝐄 𝐆 𝐀 𝐌  𝐎 𝐖 𝐍 𝐄 𝐑 ·
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 
+『 👑 』 𝐌 𝐄 𝐍 𝐔  𝐂 𝐑 𝐄 𝐀 𝐓 𝐎 𝐑 𝐄\n\n`;
+
+    // Aggiunge i comandi alla lista dinamicamente
+    ownerList.forEach(menu => {
+      menu.help.forEach(cmd => {
+        if (cmd) {
+            textMenu += `· ${menu.prefix ? cmd : _p + cmd}\n`;
+        }
+      });
+    });
+
+    textMenu += `\n👑 𝐎𝐖𝐍𝐄𝐑\n➤ 𝐆𝐈𝐔𝐒𝚵\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`;
+
+    // Invia il video/gif con la grafica premium Legam OS
     await conn.sendMessage(m.chat, {
       video: { url: './media/menu/menu6.mp4' },
-      caption: text.trim(),
-      gifPlayback: true,
+      caption: textMenu.trim(),
+      gifPlayback: true, // Lo fa riprodurre in loop silenzioso come una GIF
       gifAttribution: 2,
       mimetype: 'video/mp4',
-      ...fake,
       contextInfo: {
-        ...fake.contextInfo,
         mentionedJid: [m.sender],
+        isForwarded: true,
         forwardedNewsletterMessageInfo: {
-            ...fake.contextInfo.forwardedNewsletterMessageInfo,
-            newsletterName: "ᰔᩚ . ˚ Menu Creatore ☆˒˒"
+          newsletterJid: "120363233544482011@newsletter",
+          newsletterName: "✨.✦★彡 𝐋𝐞𝐠𝐚𝐦 𝐎𝐒 𝐀𝐮𝐭𝐡𝐨𝐫𝐢𝐭𝐲 Ξ★✦.•",
+          serverMessageId: 100
         }
       }
-    }, { quoted: m })
+    }, { quoted: m });
 
   } catch (e) {
-    console.error(e)
-    conn.reply(m.chat, global.fake.error, m)
-    throw e
+    console.error('Errore nel menu creatore:', e);
+    m.reply('❌ `Errore nella generazione del menu Owner. Assicurati che il file video esista.`');
   }
-}
-handler.help = ['menucreatore']
-handler.tags = ['menu']
-handler.command = ['menuowner', 'menucreatore']
+};
 
-export default handler
+handler.help = ['menucreatore'];
+handler.tags = ['menu'];
+// Risponde a questi due comandi
+handler.command = /^(menuowner|menucreatore)$/i;
+
+export default handler;
+
