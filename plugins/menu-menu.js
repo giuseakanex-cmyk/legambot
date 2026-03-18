@@ -24,6 +24,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
 *│ ➤* 📥 ${_p}menudownload
 *│ ➤* 👨‍💻 ${_p}menucreatore
 *│ ➤* 🛡️ ${_p}menumod
+*│ ➤* 🪩 ${_p}menuspeciale
 
 
 *│ ➤* ☢️ .contronuke
