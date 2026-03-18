@@ -28,6 +28,40 @@ const fetchGroupMetadataWithRetry = async (conn, chatId, retries = 3, delay = 10
     }
 }
 
+if (!global.cacheListenersSet) {
+    const conn = global.conn
+    if (conn) {
+        conn.ev.on('groups.update', async (updates) => {
+            for (const update of updates) {
+                if (!update || !update.id) continue;
+                try {
+                    const metadata = await fetchGroupMetadataWithRetry(conn, update.id)
+                    if (!metadata) continue;
+                    global.groupCache.set(update.id, metadata, { ttl: 300 })
+                } catch (e) {}
+            }
+        })
+        global.cacheListenersSet = true
+    }
+}
+
+if (!global.pollListenerSet) {
+    const conn = global.conn
+    if (conn) {
+        conn.ev.on('messages.update', async (chatUpdate) => {
+            for (const { key, update } of chatUpdate) {
+                if (update.pollUpdates) {
+                    try {
+                        const pollCreation = await global.store.getMessage(key)
+                        if (pollCreation) await getAggregateVotesInPollMessage({ message: pollCreation, pollUpdates: update.pollUpdates })
+                    } catch (e) {}
+                }
+            }
+        })
+        global.pollListenerSet = true
+    }
+}
+
 const isNumber = x => typeof x === 'number' && !isNaN(x)
 const delay = ms => isNumber(ms) && new Promise(resolve => setTimeout(resolve, ms))
 const responseHandlers = new Map()
@@ -52,7 +86,7 @@ function initResponseHandler(conn) {
 global.processedCalls = global.processedCalls || new Map()
 
 // ==========================================
-// LEGAM OS - MOTORE GRAFICO BENVENUTO
+// LEGAM OS - MOTORE BENVENUTO (SOLO FAKE QUOTE VERIFICATO)
 // ==========================================
 export async function participantsUpdate({ id, participants, action }) {
     try {
@@ -61,6 +95,9 @@ export async function participantsUpdate({ id, participants, action }) {
         global.processedWelcome.add(eventKey);
         setTimeout(() => global.processedWelcome.delete(eventKey), 10000);
 
+        // Se non è un add o un remove (es. è un promote/demote), lo ignoriamo perché hai già il tuo sistema!
+        if (action !== 'add' && action !== 'remove') return;
+
         console.log(chalk.bgHex('#3b0d95').white.bold(' LEGAM OS ') + chalk.yellow(` 🚨 Azione attivata: ${action} in ${id.split('@')[0]}`));
 
         if (global.opts['self']) return;
@@ -68,38 +105,44 @@ export async function participantsUpdate({ id, participants, action }) {
         let chat = global.db.data.chats[id] || {};
         let nomeDelBot = global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`;
 
-        if (!chat.welcome && (action === 'add' || action === 'remove' || action === 'promote' || action === 'demote')) {
-            console.log(chalk.red(`[!] Welcome/Goodbye DISATTIVATO per questo gruppo.`));
-            return;
-        }
+        // Controllo se il welcome è spento nel db
+        if (!chat.welcome) return;
 
         let groupMetadata = global.groupCache.get(id) || await this.groupMetadata(id).catch(_ => null) || {};
         let groupName = groupMetadata.subject || 'Questo Gruppo';
         let groupDesc = groupMetadata.desc ? groupMetadata.desc.toString() : 'Nessuna descrizione disponibile.';
 
         for (let user of participants) {
-            let pp = 'https://files.catbox.moe/57bmbv.jpg'; 
-            try { pp = await this.profilePictureUrl(user, 'image'); } catch (e) {}
+            let cleanUser = user.split('@')[0];
+            let text = '';
+
+            // Applicazione delle variabili
+            if (action === 'add') {
+                let customWelcome = chat.sWelcome || `「  *BENVENUTO* 」\n𝗔𝗼 𝗮𝘁𝘁𝗲𝗻𝘁𝗼 𝗰𝗵𝗲 𝗾𝘂𝗮 𝗱𝗲𝗻𝘁𝗿𝗼 𝗳𝗮𝗻𝗻𝗼 𝗮 𝗯𝗮𝗹𝗱𝗼𝗿𝗶𝗮 𝗳𝗿𝗮𝘁è\n👤 *Utente:* @user\n🎉 *Gruppo:* @group`;
+                text = customWelcome.replace(/@user/g, `@${cleanUser}`).replace(/@group/g, groupName).replace(/@desc/g, groupDesc);
+            } else if (action === 'remove') {
+                let customBye = chat.sBye || `「  *BYE BYE* 」\n👤 *Utente:* @user\n👋🏻 *𝗛𝗮 𝗹𝗮𝘀𝗰𝗶𝗮𝘁𝗼 𝗹𝗮 𝗰𝗼𝗺𝗶𝘁𝗶𝘃𝗮:* @group`;
+                text = customBye.replace(/@user/g, `@${cleanUser}`).replace(/@group/g, groupName).replace(/@desc/g, groupDesc);
+            }
+
+            if (!text) continue;
+
+            // 🔥 TRUCCO QUOTE VIP: "whatsapp business" Verificato 🔥
+            let fakeVerifiedQuote = {
+                key: {
+                    fromMe: false,
+                    participant: `0@s.whatsapp.net`, 
+                    remoteJid: id // Questo forza WhatsApp a scrivere "Gruppo •"
+                },
+                message: {
+                    locationMessage: {
+                        name: 'whatsapp business', // Scritta in minuscolo come da richiesta
+                        address: nomeDelBot, 
+                    }
+                }
+            };
 
             try {
-                let apii = await this.getFile(pp).catch(() => ({ data: '' }));
-                let cleanUser = user.split('@')[0];
-                let text = '';
-
-                if (action === 'add') {
-                    let customWelcome = chat.sWelcome || `「  *BENVENUTO* 」\n𝗔𝗼 𝗮𝘁𝘁𝗲𝗻𝘁𝗼 𝗰𝗵𝗲 𝗾𝘂𝗮 𝗱𝗲𝗻𝘁𝗿𝗼 𝗳𝗮𝗻𝗻𝗼 𝗮 𝗯𝗮𝗹𝗱𝗼𝗿𝗶𝗮 𝗳𝗿𝗮𝘁è\n👤 *Utente:* @user\n🎉 *Gruppo:* @group`;
-                    text = customWelcome.replace(/@user/g, `@${cleanUser}`).replace(/@group/g, groupName).replace(/@desc/g, groupDesc);
-                } else if (action === 'remove') {
-                    let customBye = chat.sBye || `「  *BYE BYE* 」\n👤 *Utente:* @user\n👋🏻 *𝗛𝗮 𝗹𝗮𝘀𝗰𝗶𝗮𝘁𝗼 𝗹𝗮 𝗰𝗼𝗺𝗶𝘁𝗶𝘃𝗮:* @group`;
-                    text = customBye.replace(/@user/g, `@${cleanUser}`).replace(/@group/g, groupName).replace(/@desc/g, groupDesc);
-                } else if (action === 'promote') {
-                    text = `@${cleanUser} \`\`\`è stato promosso Admin. Porta rispetto.\`\`\``;
-                } else if (action === 'demote') {
-                    text = `@${cleanUser} \`\`\`è stato degradato. Non è più Admin.\`\`\``;
-                }
-
-                if (!text) continue;
-
                 await this.sendMessage(id, {
                     text: text,
                     mentions: [user],
@@ -110,18 +153,12 @@ export async function participantsUpdate({ id, participants, action }) {
                             newsletterJid: '120363233544482011@newsletter',
                             serverMessageId: 100,
                             newsletterName: nomeDelBot
-                        },
-                        externalAdReply: {
-                            title: action === 'add' ? '𝐁𝐞𝐧𝐯𝐞𝐧𝐮𝐭𝐨 𝐧𝐞𝐥 𝐆𝐫𝐮𝐩𝐩𝐨 👑' : (action === 'remove' ? '𝐀𝐝𝐝𝐢𝐨 👋🏻' : '𝐀𝐠𝐠𝐢𝐨𝐫𝐧𝐚𝐦𝐞𝐧𝐭𝐨 👑'),
-                            body: 'Legam OS System',
-                            previewType: "PHOTO",
-                            thumbnailUrl: pp,
-                            thumbnail: apii.data,
-                            mediaType: 1
                         }
+                        // externalAdReply COMPLETAMENTE RIMOSSO! Nessuna immagine verrà mostrata.
                     }
-                });
-                console.log(chalk.green(`[✓] Messaggio (${action}) inviato con successo!`));
+                }, { quoted: fakeVerifiedQuote }); 
+                
+                console.log(chalk.green(`[✓] Messaggio Minimal VIP (${action}) inviato con successo!`));
             } catch (err) {
                 console.error(chalk.red("[X] Errore invio Welcome/Goodbye:"), err);
             }
@@ -151,20 +188,17 @@ export async function handler(chatUpdate) {
     m = smsg(this, m, global.store)
     if (!m || !m.key || !m.chat || !m.sender) return
 
-    // 🔥 LEGAM OS: INTERCETTATORE DI STUB (INFALLIBILE) 🔥
-    // Questo cattura i famosi eventi 27 e 28 che hai visto nel terminale!
+    // 🔥 LEGAM OS: INTERCETTATORE DI STUB (SOLO ENTRATE E USCITE) 🔥
     if (m.messageStubType && m.isGroup) {
         let actionTrigger = '';
         if (m.messageStubType === 27) actionTrigger = 'add';
         else if (m.messageStubType === 28 || m.messageStubType === 32) actionTrigger = 'remove';
-        else if (m.messageStubType === 29) actionTrigger = 'promote';
-        else if (m.messageStubType === 30) actionTrigger = 'demote';
 
+        // Tolti i codici 29 (promote) e 30 (demote)
         if (actionTrigger) {
             let who = m.messageStubParameters[0];
             if (who) {
                 console.log(chalk.cyan(`[!] Intercettato StubType ${m.messageStubType}. Inoltro al motore grafico...`));
-                // Passa il comando alla nostra funzione grafica
                 participantsUpdate.call(this, {
                     id: m.chat,
                     participants: [who],
@@ -288,7 +322,6 @@ export async function handler(chatUpdate) {
         // ==========================================
         if (m.text || m.mtype) {
             let testoLog = m.text || `[Media: ${m.mtype}]`;
-            // Non stampare gli stub nel logger testuale per non sporcarlo
             if (!m.messageStubType) {
                 let tipoChat = m.isGroup ? 'Gruppo' : 'Privato';
                 let nomeUtente = m.pushName || 'Sconosciuto';
