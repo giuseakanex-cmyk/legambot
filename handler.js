@@ -84,14 +84,109 @@ function initResponseHandler(conn) {
 
 global.processedCalls = global.processedCalls || new Map()
 
+// ==========================================
+// LEGAM OS - GESTORE ENTRATE/USCITE E GRADI (NATIVO)
+// ==========================================
 export async function participantsUpdate({ id, participants, action }) {
-    if (global.db.data.chats[id]?.rileva === false) return
-    try {
-        let metadata = global.groupCache.get(id) || await fetchMetadata(this, id)
-        if (!metadata) return
-        global.groupCache.set(id, metadata, { ttl: 300 })
-    } catch (e) {}
+    if (global.opts['self']) return;
+    if (global.isInit) return;
+    
+    let chat = global.db.data.chats[id] || {};
+    let text = '';
+    let nomeDelBot = `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`;
+
+    switch (action) {
+        case 'add':
+        case 'remove':
+            // ⚠️ FUNZIONA SOLO SE HAI SCRITTO .on welcome NEL GRUPPO
+            if (chat.welcome) {
+                let groupMetadata = global.groupCache.get(id) || await this.groupMetadata(id).catch(_ => null) || {};
+                let groupName = groupMetadata.subject || 'Questo Gruppo';
+
+                for (let user of participants) {
+                    let pp = 'https://files.catbox.moe/57bmbv.jpg'; // Immagine di Default
+                    try {
+                        pp = await this.profilePictureUrl(user, 'image');
+                    } catch (e) {}
+
+                    try {
+                        let apii = await this.getFile(pp).catch(() => ({ data: '' }));
+                        let cleanUser = user.split('@')[0];
+
+                        text = action === 'add'
+                            ? `「  *BENVENUTO* 」\n𝗔𝗼 𝗮𝘁𝘁𝗲𝗻𝘁𝗼 𝗰𝗵𝗲 𝗾𝘂𝗮 𝗱𝗲𝗻𝘁𝗿𝗼 𝗳𝗮𝗻𝗻𝗼 𝗮 𝗯𝗮𝗹𝗱𝗼𝗿𝗶𝗮 𝗳𝗿𝗮𝘁è\n👤 *Utente:* @${cleanUser}\n🎉 *Gruppo:* ${groupName}`
+                            : `「  *BYE BYE* 」\n👤 *Utente:* @${cleanUser}\n👋🏻 *𝗛𝗮 𝗹𝗮𝘀𝗰𝗶𝗮𝘁𝗼 𝗹𝗮 𝗰𝗼𝗺𝗶𝘁𝗶𝘃𝗮:* ${groupName}`;
+
+                        await this.sendMessage(id, {
+                            text: text,
+                            mentions: [user],
+                            contextInfo: {
+                                mentionedJid: [user],
+                                isForwarded: true,
+                                forwardedNewsletterMessageInfo: {
+                                    newsletterJid: '120363233544482011@newsletter',
+                                    serverMessageId: 100,
+                                    newsletterName: nomeDelBot
+                                },
+                                externalAdReply: {
+                                    title: action === 'add' ? '𝐁𝐞𝐧𝐯𝐞𝐧𝐮𝐭𝐨 𝐧𝐞𝐥 𝐆𝐫𝐮𝐩𝐩𝐨 👑' : '𝐀𝐝𝐝𝐢𝐨 👋🏻',
+                                    body: 'Legam OS System',
+                                    previewType: "PHOTO",
+                                    thumbnailUrl: pp,
+                                    thumbnail: apii.data,
+                                    mediaType: 1
+                                }
+                            }
+                        });
+                    } catch (err) {
+                        console.error("[LEGAM OS] Errore invio Welcome/Goodbye:", err);
+                    }
+                }
+            }
+            break;
+
+        case 'promote':
+        case 'demote':
+            // GESTIONE PROMOZIONI E RETROCESSIONI (Admin)
+            if (chat.welcome) {
+                for (let user of participants) {
+                    let pp = 'https://files.catbox.moe/57bmbv.jpg';
+                    try { pp = await this.profilePictureUrl(user, 'image'); } catch (e) {}
+
+                    try {
+                        let apii = await this.getFile(pp).catch(() => ({ data: '' }));
+                        text = action === 'promote' 
+                            ? `@${user.split('@')[0]} \`\`\`è stato promosso Admin. Porta rispetto.\`\`\`` 
+                            : `@${user.split('@')[0]} \`\`\`è stato degradato. Non è più Admin.\`\`\``;
+
+                        await this.sendMessage(id, { 
+                            text: text, 
+                            mentions: [user],
+                            contextInfo: { 
+                                mentionedJid: [user],
+                                isForwarded: true, 
+                                forwardedNewsletterMessageInfo: {
+                                    newsletterJid: '120363233544482011@newsletter',
+                                    serverMessageId: 100, 
+                                    newsletterName: nomeDelBot 
+                                },
+                                externalAdReply: {
+                                    title: action === 'promote' ? '𝐌𝐞𝐬𝐬𝐚𝐠𝐠𝐢𝐨 𝐝𝐢 𝐏𝐫𝐨𝐦𝐨𝐳𝐢𝐨𝐧𝐞 👑' : '𝐌𝐞𝐬𝐬𝐚𝐠𝐠𝐢𝐨 𝐝𝐢 𝐑𝐞𝐭𝐫𝐨𝐜𝐞𝐬𝐬𝐢𝐨𝐧𝐞 🙇🏻‍♂️',
+                                    body: 'Legam OS System',
+                                    previewType: "PHOTO", 
+                                    thumbnailUrl: pp, 
+                                    thumbnail: apii.data,
+                                    mediaType: 1
+                                }
+                            }
+                        });
+                    } catch (e) {}
+                }
+            }
+            break;
+    }
 }
+// ==========================================
 
 export async function handler(chatUpdate) {
     this.msgqueque = this.msgqueque || []
