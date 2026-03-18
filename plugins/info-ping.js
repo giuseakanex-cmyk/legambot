@@ -32,9 +32,9 @@ let handler = async (m, { conn, usedPrefix }) => {
       text: textMsg,
       footer: "✧ 𝐋 𝐄 𝐆 𝐀 𝐌  𝐎 𝐒 ✧",
       buttons: [
-        { buttonId: usedPrefix + "ping", buttonText: { displayText: "📡 Rifai Ping" }, type: 1 },
-        { buttonId: usedPrefix + "menu", buttonText: { displayText: "✧ Menu Generale" }, type: 1 },
-        { buttonId: usedPrefix + "ds", buttonText: { displayText: "🗑️ Svuota Cache" }, type: 1 }
+        { buttonId: usedPrefix + "ping", buttonText: { displayText: "🏓 𝐏𝐢𝐧𝐠" }, type: 1 },
+        { buttonId: usedPrefix + "menu", buttonText: { displayText: "✧𝐌𝐞𝐧𝐮✧" }, type: 1 },
+        { buttonId: usedPrefix + "ds", buttonText: { displayText: "🗑️ 𝐒𝐯𝐮𝐨𝐭𝐚 𝐒𝐞𝐬𝐬𝐢𝐨𝐧𝐢" }, type: 1 }
       ],
       headerType: 1,
       contextInfo: {
