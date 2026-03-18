@@ -1,4 +1,4 @@
-// Database temporaneo per le partite in corso,BY GIUSE
+// Plugin by giuse,chiedere permesso prima di utilizzare.Database temporaneo per le partite in corso
 global.virtualMatches = global.virtualMatches || {}
 
 // Funzione per formattare i numeri (es. 1.000.000)
@@ -6,27 +6,32 @@ function formatNumber(num) {
     return new Intl.NumberFormat('it-IT').format(num)
 }
 
-// DATABASE GIOCATORI SERIE A 2025/2026
+// DATABASE GIOCATORI SERIE A 2025/2026 (COMPLETO)
 const roseSerieA = {
-    "Napoli": ["Kvaratskhelia", "Lukaku", "McTominay", "Politano", "Buongiorno", "Di Lorenzo"],
-    "Inter": ["Lautaro Martinez", "Thuram", "Barella", "Calhanoglu", "Dimarco", "Bastoni"],
-    "Juventus": ["Vlahovic", "Yildiz", "Koopmeiners", "Conceicao", "Cambiaso", "Bremer"],
-    "Milan": ["Leao", "Morata", "Pulisic", "Reijnders", "Theo Hernandez", "Maignan"],
-    "Atalanta": ["Lookman", "Retegui", "De Ketelaere", "Ederson", "Bellanova"],
-    "Roma": ["Dybala", "Dovbyk", "Soulé", "Pellegrini", "Mancini"],
-    "Lazio": ["Zaccagni", "Castellanos", "Dia", "Guendouzi", "Rovella"],
-    "Fiorentina": ["Kean", "Gudmundsson", "Colpani", "Dodo", "De Gea"],
-    "Bologna": ["Castro", "Orsolini", "Ndoye", "Freuler", "Beukema"],
-    "Torino": ["Adams", "Sanabria", "Ricci", "Ilic", "Coco"]
+    "Napoli": ["Kvaratskhelia", "Lukaku", "McTominay", "Politano", "Di Lorenzo"],
+    "Inter": ["Lautaro Martinez", "Thuram", "Barella", "Calhanoglu", "Dimarco"],
+    "Juventus": ["Vlahovic", "Yildiz", "Koopmeiners", "Conceicao", "Cambiaso"],
+    "Milan": ["Leao", "Morata", "Pulisic", "Reijnders", "Theo Hernandez"],
+    "Atalanta": ["Lookman", "Retegui", "De Ketelaere", "Ederson", "Pasalic"],
+    "Roma": ["Dybala", "Dovbyk", "Soulé", "Pellegrini", "El Shaarawy"],
+    "Lazio": ["Zaccagni", "Castellanos", "Dia", "Guendouzi", "Pedro"],
+    "Fiorentina": ["Kean", "Gudmundsson", "Colpani", "Bove", "Gosens"],
+    "Bologna": ["Castro", "Orsolini", "Ndoye", "Freuler", "Fabbian"],
+    "Torino": ["Adams", "Sanabria", "Ricci", "Ilic", "Vlasic"],
+    "Genoa": ["Pinamonti", "Messias", "Frendrup", "Malinovskyi"],
+    "Parma": ["Man", "Mihaila", "Bernabé", "Bonny"],
+    "Como": ["Cutrone", "Strefezza", "Nico Paz", "Fadera"],
+    "Empoli": ["Colombo", "Esposito", "Fazzini", "Gyasi"],
+    "Verona": ["Tengstedt", "Lazovic", "Suslov", "Kastanos"],
+    "Lecce": ["Krstovic", "Dorgu", "Oudin", "Banda"]
 }
 
-// Funzione per pescare un giocatore reale (o generico se la squadra è minore)
+// Pesca un giocatore reale della squadra specifica
 function getPlayer(team) {
     if (roseSerieA[team]) {
         return roseSerieA[team][Math.floor(Math.random() * roseSerieA[team].length)]
     }
-    const generici = ["L'attaccante", "Il fantasista", "Il centravanti", "L'esterno", "Il difensore"]
-    return generici[Math.floor(Math.random() * generici.length)]
+    return "Un attaccante" // Fallback (non dovrebbe mai uscire grazie al db completo)
 }
 
 // Quote fisse
@@ -45,7 +50,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
             return m.reply(`『 🛑 』 \`C'è già un match in corso! Attendi il triplice fischio.\``)
         }
 
-        const squadre = ["Napoli", "Inter", "Juventus", "Milan", "Atalanta", "Roma", "Lazio", "Fiorentina", "Bologna", "Torino", "Genoa", "Parma", "Como", "Empoli", "Verona", "Lecce"]
+        const squadre = Object.keys(roseSerieA)
         let shuffled = squadre.sort(() => 0.5 - Math.random())
         let sq1 = shuffled[0]
         let sq2 = shuffled[1]
@@ -54,27 +59,30 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
             state: 'betting', sq1: sq1, sq2: sq2, score1: 0, score2: 0, bets: [], timer: null
         }
 
-        // 🎨 GRAFICA PREMIUM BOTTEGHINO LEGAM OS
+        // 🎨 GRAFICA BOTTEGHINO (Stile .top Legam OS)
         let msg = `
-╭── •✧ 𝐋𝐄𝐆𝐀𝐌 𝐁𝐄𝐓𝐓𝐈𝐍𝐆 ✧• ──╮
-│ 🏆 𝐒𝐄𝐑𝐈𝐄 𝐀 𝐕𝐈𝐑𝐓𝐔𝐀𝐋𝐄
-│ ⚔️ *${sq1}* 🆚 *${sq2}*
-│ ⏱️ 𝐂𝐡𝐢𝐮𝐬𝐮𝐫𝐚: 40 Secondi
-╰──────────────────╯
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
+· 𝐋 𝐄 𝐆 𝐀 𝐌  𝐁 𝐄 𝐓 𝐓 𝐈 𝐍 𝐆 ·
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 
-📊 𝐐 𝐔 𝐎 𝐓 𝐄  𝐎 𝐅 𝐅 𝐈 𝐂 𝐈 𝐀 𝐋 𝐈
-[ 𝟏 ] Vittoria ${sq1} ➻ *${QUOTE['1'].toFixed(2)}x*
-[ 𝐗 ] Pareggio ➻ *${QUOTE['X'].toFixed(2)}x*
-[ 𝟐 ] Vittoria ${sq2} ➻ *${QUOTE['2'].toFixed(2)}x*
-[ 𝐆𝐆 ] Entrambe a Segno ➻ *${QUOTE['GG'].toFixed(2)}x*
-[ 𝐍𝐆 ] Nessun Goal/Una a secco ➻ *${QUOTE['NG'].toFixed(2)}x*
-[ 𝐎𝐕𝐄𝐑 ] Più di 2 Goal ➻ *${QUOTE['OVER'].toFixed(2)}x*
-[ 𝐔𝐍𝐃𝐄𝐑 ] Max 2 Goal ➻ *${QUOTE['UNDER'].toFixed(2)}x*
+『 🏟️ 』 𝐌 𝐀 𝐓 𝐂 𝐇  𝐔 𝐅 𝐅 𝐈 𝐂 𝐈 𝐀 𝐋 𝐄
+· ⚔️ *${sq1}* 🆚 *${sq2}*
+· ⏱️ 𝐂𝐡𝐢𝐮𝐬𝐮𝐫𝐚: 40 Secondi
 
-💡 𝐂 𝐎 𝐌 𝐄  𝐆 𝐈 𝐎 𝐂 𝐀 𝐑 𝐄
-➤ Scrivi: *${usedPrefix}punta [Esito] [Euro]*
-➤ Esempio: *${usedPrefix}punta 1 500*
-`.trim()
+『 📊 』 𝐐 𝐔 𝐎 𝐓 𝐄  𝐋 𝐈 𝐕 𝐄
+· [ 𝟏 ] Vittoria ${sq1} ➻ *${QUOTE['1'].toFixed(2)}x*
+· [ 𝐗 ] Pareggio ➻ *${QUOTE['X'].toFixed(2)}x*
+· [ 𝟐 ] Vittoria ${sq2} ➻ *${QUOTE['2'].toFixed(2)}x*
+· [ 𝐆𝐆 ] Entrambe a Segno ➻ *${QUOTE['GG'].toFixed(2)}x*
+· [ 𝐍𝐆 ] Almeno una a secco ➻ *${QUOTE['NG'].toFixed(2)}x*
+· [ 𝐎𝐕𝐄𝐑 ] Più di 2 Goal ➻ *${QUOTE['OVER'].toFixed(2)}x*
+· [ 𝐔𝐍𝐃𝐄𝐑 ] Max 2 Goal ➻ *${QUOTE['UNDER'].toFixed(2)}x*
+
+│ 💡 Usa: *${usedPrefix}punta [Esito] [Euro]*
+│ 𝐄𝐬𝐞𝐦𝐩𝐢𝐨: *${usedPrefix}punta 1 500*
+
+👑 𝐎𝐖𝐍𝐄𝐑 ➤ 𝐆𝐈𝐔𝐒𝚵
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
 
         await conn.sendMessage(chatId, {
             text: msg,
@@ -120,30 +128,35 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
             return m.reply(`『 ⏳ 』 \`Hai già piazzato un ticket! Goditi il match.\``)
         }
 
-        // Scala i soldi
         user.euro -= puntata
         match.bets.push({ sender: m.sender, scommessa, puntata })
 
-        // Calcolo vincita potenziale
         let moltiplicatore = QUOTE[scommessa];
         let potenziale = Math.floor(puntata * moltiplicatore);
 
-        // 🎨 GRAFICA RICEVUTA PREMIUM
+        // 🎨 GRAFICA RICEVUTA (Stile .top Legam OS)
         let ricevuta = `
-╭── •✧ 𝐓𝐈𝐂𝐊𝐄𝐓 𝐋𝐄𝐆𝐀𝐌 ✧• ──╮
-│ 👤 𝐁𝐞𝐭𝐭𝐞𝐫: @${m.sender.split('@')[0]}
-│ ⚽ 𝐌𝐚𝐭𝐜𝐡: ${match.sq1} - ${match.sq2}
-│ 🎯 𝐏𝐫𝐨𝐧𝐨𝐬𝐭𝐢𝐜𝐨: [ *${scommessa}* ]
-│ 💶 𝐏𝐮𝐧𝐭𝐚𝐭𝐚: *${formatNumber(puntata)} €*
-│ 💰 𝐏𝐨𝐭𝐞𝐧𝐳𝐢𝐚𝐥𝐞: *${formatNumber(potenziale)} €*
-╰──────────────────╯`.trim()
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
+· 𝐓 𝐈 𝐂 𝐊 𝐄 𝐓  𝐋 𝐄 𝐆 𝐀 𝐌 ·
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
+
+『 👤 』 𝐁 𝐞 𝐭 𝐭 𝐞 𝐫
+· @${m.sender.split('@')[0]}
+
+『 🎯 』 𝐃 𝐞 𝐭 𝐭 𝐚 𝐠 𝐥 𝐢
+· 𝐌𝐚𝐭𝐜𝐡 ➻ ${match.sq1} - ${match.sq2}
+· 𝐏𝐫𝐨𝐧𝐨𝐬𝐭𝐢𝐜𝐨 ➻ [ *${scommessa}* ]
+· 𝐏𝐮𝐧𝐭𝐚𝐭𝐚 ➻ *${formatNumber(puntata)} €*
+· 𝐏𝐨𝐭𝐞𝐧𝐳𝐢𝐚𝐥𝐞 ➻ *${formatNumber(potenziale)} €*
+
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
 
         await conn.sendMessage(chatId, { text: ricevuta, mentions: [m.sender] }, { quoted: m })
     }
 }
 
 // ==========================================
-// TELECRONACA LIVE AVANZATA
+// TELECRONACA LIVE (GRAMMATICA PERFETTA)
 // ==========================================
 async function avviaPartita(conn, chatId) {
     let match = global.virtualMatches[chatId]
@@ -174,17 +187,17 @@ async function avviaPartita(conn, chatId) {
             // GOAL
             if (isTeam1) match.score1++; else match.score2++;
             let stiliGol = [
-                `botta micidiale da fuori area di *${player}*! Palla all'incrocio!`,
-                `colpo di testa imperioso di *${player}* su calcio d'angolo!`,
-                `magia di *${player}* che salta due difensori e la piazza all'angolino!`,
-                `errore clamoroso della difesa, *${player}* a tu per tu col portiere non perdona!`
+                `che fa partire un missile terra-aria da fuori area! Palla dritta all'incrocio dei pali!`,
+                `che svetta più in alto di tutti su calcio d'angolo e insacca di testa!`,
+                `che riceve un filtrante perfetto, salta netto l'ultimo difensore e deposita in rete!`,
+                `che approfitta di una dormita clamorosa della difesa e non perdona da due passi!`
             ]
-            msg = `⚽ 𝐆𝐎𝐎𝐎𝐀𝐀𝐀𝐋 𝐏𝐄𝐑 𝐈𝐋 ${attackingTeam.toUpperCase()}!!!\n${stiliGol[Math.floor(Math.random()*stiliGol.length)]}\n\n📊 *${match.sq1} [ ${match.score1} - ${match.score2} ] ${match.sq2}*`
+            msg = `⚽ 𝐆𝐎𝐎𝐎𝐀𝐀𝐀𝐋 𝐏𝐄𝐑 𝐈𝐋 ${attackingTeam.toUpperCase()}!!!\nRete di *${player}* ${stiliGol[Math.floor(Math.random()*stiliGol.length)]}\n\n📊 *${match.sq1} [ ${match.score1} - ${match.score2} ] ${match.sq2}*`
             await conn.sendMessage(chatId, { text: `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n${msg}` })
         } 
         else if (actionType < 0.60) {
-            // VAR / RIGORE (Con 7 SECONDI DI ATTESA REALI)
-            let msgVar = `📺 𝐀𝐓𝐓𝐄𝐍𝐙𝐈𝐎𝐍𝐄! 𝐈𝐋 𝐕𝐀𝐑 𝐂𝐇𝐈𝐀𝐌𝐀 𝐋'𝐀𝐑𝐁𝐈𝐓𝐑𝐎!\nCheck in corso per un possibile contatto su *${player}* in area del ${defendingTeam}...`
+            // VAR (7 SECONDI REALI DI ATTESA)
+            let msgVar = `📺 𝐀𝐓𝐓𝐄𝐍𝐙𝐈𝐎𝐍𝐄 𝐀𝐋 𝐕𝐀𝐑!\nL'arbitro viene richiamato al monitor per un contatto molto sospetto su *${player}* nell'area di rigore del ${defendingTeam}...`
             await conn.sendMessage(chatId, { text: `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n${msgVar}` })
             
             // 🔥 IL VAR DURA 7 SECONDI ESATTI 🔥
@@ -192,21 +205,21 @@ async function avviaPartita(conn, chatId) {
             
             if (Math.random() > 0.5) {
                 if (isTeam1) match.score1++; else match.score2++;
-                msg = `✅ 𝐃𝐄𝐂𝐈𝐒𝐈𝐎𝐍𝐄 𝐕𝐀𝐑: 𝐄' 𝐑𝐈𝐆𝐎𝐑𝐄!\nDal dischetto va *${player}*... RETE! Spiazza il portiere con freddezza glaciale!\n\n📊 *${match.sq1} [ ${match.score1} - ${match.score2} ] ${match.sq2}*`
+                msg = `✅ 𝐃𝐄𝐂𝐈𝐒𝐈𝐎𝐍𝐄 𝐕𝐀𝐑: 𝐄' 𝐑𝐈𝐆𝐎𝐑𝐄 𝐏𝐄𝐑 𝐈𝐋 ${attackingTeam.toUpperCase()}!\nDal dischetto si presenta *${player}*... RETE! Esecuzione perfetta che spiazza il portiere!\n\n📊 *${match.sq1} [ ${match.score1} - ${match.score2} ] ${match.sq2}*`
             } else {
-                msg = `❌ 𝐃𝐄𝐂𝐈𝐒𝐈𝐎𝐍𝐄 𝐕𝐀𝐑: 𝐍𝐔𝐋𝐋𝐀 𝐃𝐈 𝐅𝐀𝐓𝐓𝐎!\nL'arbitro fa ampi cenni di proseguire. Il tocco era sul pallone. Si gioca!`
+                msg = `❌ 𝐃𝐄𝐂𝐈𝐒𝐈𝐎𝐍𝐄 𝐕𝐀𝐑: 𝐍𝐈𝐄𝐍𝐓𝐄 𝐑𝐈𝐆𝐎𝐑𝐄!\nIl contatto di *${player}* è stato giudicato regolare. L'arbitro fa segno che si può continuare, palla al ${defendingTeam}.`
             }
             await conn.sendMessage(chatId, { text: msg })
         }
         else if (actionType < 0.80) {
-            // SALVATAGGIO / ERRORE
-            msg = `😱 𝐌𝐈𝐑𝐀𝐂𝐎𝐋𝐎 𝐃𝐄𝐋 𝐏𝐎𝐑𝐓𝐈𝐄𝐑𝐄!\n*${player}* calcia a botta sicura dall'area piccola, ma l'estremo difensore del ${defendingTeam} compie un intervento paranormale!`
+            // MIRACOLO PORTIERE
+            msg = `😱 𝐌𝐈𝐑𝐀𝐂𝐎𝐋𝐎 𝐃𝐄𝐋 𝐏𝐎𝐑𝐓𝐈𝐄𝐑𝐄 𝐃𝐄𝐋 ${defendingTeam.toUpperCase()}!\n*${player}* calcia a botta sicura dall'area piccola, ma l'estremo difensore compie un intervento letteralmente paranormale!`
             await conn.sendMessage(chatId, { text: `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n${msg}` })
         } 
         else {
-            // CARTELLINO
+            // CARTELLINO GIALLO
             let defPlayer = getPlayer(defendingTeam)
-            msg = `🟨 *𝐂𝐀𝐑𝐓𝐄𝐋𝐋𝐈𝐍𝐎 𝐆𝐈𝐀𝐋𝐋𝐎!*\nEntrata durissima di *${defPlayer}* per fermare il contropiede. Ammonizione sacrosanta.`
+            msg = `🟨 *𝐂𝐀𝐑𝐓𝐄𝐋𝐋𝐈𝐍𝐎 𝐆𝐈𝐀𝐋𝐋𝐎!*\nIntervento in netto ritardo di *${defPlayer}* (${defendingTeam}) per fermare il contropiede di ${player}. L'arbitro estrae il cartellino senza esitazioni.`
             await conn.sendMessage(chatId, { text: `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n${msg}` })
         }
     }
@@ -264,14 +277,17 @@ async function avviaPartita(conn, chatId) {
 🛡️ *${match.sq1}* [ ${match.score1} - ${match.score2} ] *${match.sq2}* 🛡️
 
 🎯 *𝐄𝐬𝐢𝐭𝐢 𝐕𝐢𝐧𝐜𝐞𝐧𝐭𝐢:* ${esitiVincenti.join(', ')}
-─────────────────`
+
+│ 🏆 𝐑 𝐄 𝐒 𝐎 𝐂 𝐎 𝐍 𝐓 𝐎`
 
     if (match.bets.length === 0) {
-        finale += `\n😅 \`Nessuna giocata registrata.\``
+        finale += `\n│ 😅 \`Nessuna giocata registrata.\``
     } else {
-        finale += `\n🏆 𝐑𝐄𝐒𝐎𝐂𝐎𝐍𝐓𝐎 𝐆𝐈𝐎𝐂𝐀𝐓𝐄:${winnersTxt}`
+        finale += winnersTxt
     }
     
+    finale += `\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`
+
     await conn.sendMessage(chatId, { 
         text: finale.trim(), 
         mentions: scommettitori,
@@ -292,4 +308,5 @@ async function avviaPartita(conn, chatId) {
 handler.command = ['virtuali', 'punta', 'bet']
 handler.group = true
 export default handler
+
 
