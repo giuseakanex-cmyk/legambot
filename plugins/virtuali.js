@@ -1,69 +1,94 @@
 // Plugin by giuse, chiedere permesso prima di utilizzare.
-// Database temporaneo per le partite in corso
 global.virtualMatches = global.virtualMatches || {}
 
-// URL Immagine Ufficiale Virtuali AGGIORNATA
+// URL Immagine Ufficiale Virtuali
 const VIRTUALI_IMAGE_URL = 'https://i.ibb.co/XkXzT452/IMG-2039.jpg';
 
-// Funzione per formattare i numeri (es. 1.000.000)
 function formatNumber(num) {
     return new Intl.NumberFormat('it-IT').format(num)
 }
 
-// DATABASE GIOCATORI SERIE A 2025/2026 (COMPLETO)
-const roseSerieA = {
-    "Napoli": ["Kvaratskhelia", "Lukaku", "McTominay", "Politano", "Di Lorenzo"],
-    "Inter": ["Lautaro Martinez", "Thuram", "Barella", "Calhanoglu", "Dimarco"],
-    "Juventus": ["Vlahovic", "Yildiz", "Koopmeiners", "Conceicao", "Cambiaso"],
-    "Milan": ["Leao", "Morata", "Pulisic", "Reijnders", "Theo Hernandez"],
-    "Atalanta": ["Lookman", "Retegui", "De Ketelaere", "Ederson", "Pasalic"],
-    "Roma": ["Dybala", "Dovbyk", "Soulé", "Pellegrini", "El Shaarawy"],
-    "Lazio": ["Zaccagni", "Castellanos", "Dia", "Guendouzi", "Pedro"],
-    "Fiorentina": ["Kean", "Gudmundsson", "Colpani", "Bove", "Gosens"],
-    "Bologna": ["Castro", "Orsolini", "Ndoye", "Freuler", "Fabbian"],
-    "Torino": ["Adams", "Sanabria", "Ricci", "Ilic", "Vlasic"],
-    "Genoa": ["Pinamonti", "Messias", "Frendrup", "Malinovskyi"],
-    "Parma": ["Man", "Mihaila", "Bernabé", "Bonny"],
-    "Como": ["Cutrone", "Strefezza", "Nico Paz", "Fadera"],
-    "Empoli": ["Colombo", "Esposito", "Fazzini", "Gyasi"],
-    "Verona": ["Tengstedt", "Lazovic", "Suslov", "Kastanos"],
-    "Lecce": ["Krstovic", "Dorgu", "Oudin", "Banda"]
+// DATABASE GIOCATORI E FORZA SQUADRE (RATING DA 1 A 100)
+const serieAData = {
+    "Inter": { rating: 95, roster: ["Lautaro Martinez", "Thuram", "Barella", "Calhanoglu", "Dimarco"] },
+    "Napoli": { rating: 93, roster: ["Kvaratskhelia", "Lukaku", "McTominay", "Politano", "Di Lorenzo"] },
+    "Juventus": { rating: 92, roster: ["Vlahovic", "Yildiz", "Koopmeiners", "Conceicao", "Cambiaso"] },
+    "Milan": { rating: 90, roster: ["Leao", "Morata", "Pulisic", "Reijnders", "Theo Hernandez"] },
+    "Atalanta": { rating: 89, roster: ["Lookman", "Retegui", "De Ketelaere", "Ederson", "Pasalic"] },
+    "Lazio": { rating: 87, roster: ["Zaccagni", "Castellanos", "Dia", "Guendouzi", "Pedro"] },
+    "Roma": { rating: 85, roster: ["Dybala", "Dovbyk", "Soulé", "Pellegrini", "El Shaarawy"] },
+    "Fiorentina": { rating: 84, roster: ["Kean", "Gudmundsson", "Colpani", "Bove", "Gosens"] },
+    "Bologna": { rating: 82, roster: ["Castro", "Orsolini", "Ndoye", "Freuler", "Fabbian"] },
+    "Torino": { rating: 79, roster: ["Adams", "Sanabria", "Ricci", "Ilic", "Vlasic"] },
+    "Genoa": { rating: 75, roster: ["Pinamonti", "Messias", "Frendrup", "Malinovskyi"] },
+    "Parma": { rating: 73, roster: ["Man", "Mihaila", "Bernabé", "Bonny"] },
+    "Como": { rating: 72, roster: ["Cutrone", "Strefezza", "Nico Paz", "Fadera"] },
+    "Empoli": { rating: 70, roster: ["Colombo", "Esposito", "Fazzini", "Gyasi"] },
+    "Verona": { rating: 68, roster: ["Tengstedt", "Lazovic", "Suslov", "Kastanos"] },
+    "Lecce": { rating: 65, roster: ["Krstovic", "Dorgu", "Oudin", "Banda"] }
 }
 
-// Pesca un giocatore reale della squadra specifica
 function getPlayer(team) {
-    if (roseSerieA[team]) {
-        return roseSerieA[team][Math.floor(Math.random() * roseSerieA[team].length)]
-    }
-    return "Un attaccante" // Fallback (non dovrebbe mai uscire grazie al db completo)
+    return serieAData[team].roster[Math.floor(Math.random() * serieAData[team].roster.length)]
 }
 
-// Quote fisse
-const QUOTE = {
-    '1': 2.0, 'X': 3.0, '2': 2.0, 'GG': 1.8, 'NG': 1.8, 'OVER': 2.0, 'UNDER': 1.8
-};
+// ALGORITMO LEGAM: Generazione Quote Dinamiche in base alla forza
+function calcolaQuote(sq1, sq2) {
+    let r1 = serieAData[sq1].rating;
+    let r2 = serieAData[sq2].rating;
+    let diff = r1 - r2;
+
+    // Calcolo probabilità (Normalizzate)
+    let prob1 = 0.38 + (diff * 0.015);
+    let prob2 = 0.38 - (diff * 0.015);
+    let probX = 0.24 - (Math.abs(diff) * 0.005);
+
+    // Muro di sicurezza probabilità
+    prob1 = Math.max(0.10, Math.min(0.85, prob1));
+    prob2 = Math.max(0.10, Math.min(0.85, prob2));
+    
+    // Ricalibro totale a 1 (100%)
+    let total = prob1 + prob2 + probX;
+    prob1 /= total; prob2 /= total; probX /= total;
+
+    // Margine del banco (5% di aggio come i veri bookmaker)
+    const margin = 0.95; 
+
+    // OVER/UNDER & GG/NG dinamici
+    let avgR = (r1 + r2) / 2;
+    let probOver = 0.45 + (avgR > 85 ? 0.08 : 0) + (Math.abs(diff) > 15 ? 0.07 : 0);
+    let probGG = 0.50 + (Math.abs(diff) < 10 ? 0.08 : -0.05);
+
+    return {
+        '1': parseFloat(((1 / prob1) * margin).toFixed(2)),
+        'X': parseFloat(((1 / probX) * margin).toFixed(2)),
+        '2': parseFloat(((1 / prob2) * margin).toFixed(2)),
+        'OVER': parseFloat(((1 / probOver) * margin).toFixed(2)),
+        'UNDER': parseFloat(((1 / (1 - probOver)) * margin).toFixed(2)),
+        'GG': parseFloat(((1 / probGG) * margin).toFixed(2)),
+        'NG': parseFloat(((1 / (1 - probGG)) * margin).toFixed(2))
+    }
+}
 
 let handler = async (m, { conn, args, usedPrefix, command }) => {
     let chatId = m.chat
 
-    // ==========================================
-    // COMANDO 1: .virtuali (Crea la partita)
-    // ==========================================
     if (command === 'virtuali') {
-        if (global.virtualMatches[chatId]) {
-            return m.reply(`『 🛑 』 \`C'è già un match in corso! Attendi il triplice fischio.\``)
-        }
+        if (global.virtualMatches[chatId]) return m.reply(`『 🛑 』 \`C'è già un match in corso!\``)
 
-        const squadre = Object.keys(roseSerieA)
+        const squadre = Object.keys(serieAData)
         let shuffled = squadre.sort(() => 0.5 - Math.random())
         let sq1 = shuffled[0]
         let sq2 = shuffled[1]
 
+        // Calcola e blocca le quote per questo specifico match
+        let quoteMatch = calcolaQuote(sq1, sq2)
+
         global.virtualMatches[chatId] = {
-            state: 'betting', sq1: sq1, sq2: sq2, score1: 0, score2: 0, bets: [], timer: null
+            state: 'betting', sq1: sq1, sq2: sq2, score1: 0, score2: 0, 
+            bets: [], timer: null, quote: quoteMatch
         }
 
-        // 🎨 GRAFICA BOTTEGHINO (Stile .top Legam OS)
         let msg = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 · 𝐋 𝐄 𝐆 𝐀 𝐌  𝐁 𝐄 𝐓 𝐓 𝐈 𝐍 𝐆 ·
@@ -73,14 +98,14 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 · ⚔️ *${sq1}* 🆚 *${sq2}*
 · ⏱️ 𝐂𝐡𝐢𝐮𝐬𝐮𝐫𝐚: 40 Secondi
 
-『 📊 』 𝐐 𝐔 𝐎 𝐓 𝐄  𝐋 𝐈 𝐕 𝐄
-· [ 𝟏 ] Vittoria ${sq1} ➻ *${QUOTE['1'].toFixed(2)}x*
-· [ 𝐗 ] Pareggio ➻ *${QUOTE['X'].toFixed(2)}x*
-· [ 𝟐 ] Vittoria ${sq2} ➻ *${QUOTE['2'].toFixed(2)}x*
-· [ 𝐆𝐆 ] Entrambe a Segno ➻ *${QUOTE['GG'].toFixed(2)}x*
-· [ 𝐍𝐆 ] Almeno una a secco ➻ *${QUOTE['NG'].toFixed(2)}x*
-· [ 𝐎𝐕𝐄𝐑 ] Più di 2 Goal ➻ *${QUOTE['OVER'].toFixed(2)}x*
-· [ 𝐔𝐍𝐃𝐄𝐑 ] Max 2 Goal ➻ *${QUOTE['UNDER'].toFixed(2)}x*
+『 📊 』 𝐐 𝐔 𝐎 𝐓 𝐄  𝐃 𝐈 𝐍 𝐀 𝐌 𝐈 𝐂 𝐇 𝐄
+· [ 𝟏 ] Vittoria ${sq1} ➻ *${quoteMatch['1'].toFixed(2)}x*
+· [ 𝐗 ] Pareggio ➻ *${quoteMatch['X'].toFixed(2)}x*
+· [ 𝟐 ] Vittoria ${sq2} ➻ *${quoteMatch['2'].toFixed(2)}x*
+· [ 𝐆𝐆 ] Entrambe a Segno ➻ *${quoteMatch['GG'].toFixed(2)}x*
+· [ 𝐍𝐆 ] Almeno una a secco ➻ *${quoteMatch['NG'].toFixed(2)}x*
+· [ 𝐎𝐕𝐄𝐑 ] Più di 2 Goal ➻ *${quoteMatch['OVER'].toFixed(2)}x*
+· [ 𝐔𝐍𝐃𝐄𝐑 ] Max 2 Goal ➻ *${quoteMatch['UNDER'].toFixed(2)}x*
 
 │ 💡 Usa: *${usedPrefix}punta [Esito] [Euro]*
 │ 𝐄𝐬𝐞𝐦𝐩𝐢𝐨: *${usedPrefix}punta 1 500*
@@ -88,7 +113,6 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 👑 𝐎𝐖𝐍𝐄𝐑 ➤ 𝐆𝐈𝐔𝐒𝚵
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
 
-        // Invia Immagine con testo come didascalia
         await conn.sendMessage(chatId, {
             image: { url: VIRTUALI_IMAGE_URL },
             caption: msg,
@@ -102,29 +126,23 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
             }
         })
 
-        // Timer di 40 secondi
         global.virtualMatches[chatId].timer = setTimeout(async () => {
             await avviaPartita(conn, chatId)
         }, 40000)
-        
         return
     }
 
-    // ==========================================
-    // COMANDO 2: .punta (Piazza la scommessa)
-    // ==========================================
     if (command === 'punta' || command === 'bet') {
         let match = global.virtualMatches[chatId]
-        
         if (!match) return m.reply(`『 ⚠️ 』 \`Nessun match attivo. Usa ${usedPrefix}virtuali\``)
         if (match.state !== 'betting') return m.reply(`『 🛑 』 \`Botteghino chiuso! Partita iniziata.\``)
 
         let user = global.db.data.users[m.sender]
-        if (!args[0] || !args[1]) return m.reply(`👉 Usa: *${usedPrefix}punta [ESITO] [EURO]*\n💡 Esempio: *${usedPrefix}punta X 100*`)
+        if (!args[0] || !args[1]) return m.reply(`👉 Usa: *${usedPrefix}punta [ESITO] [EURO]*`)
         
         let scommessa = args[0].toUpperCase()
         let puntata = parseInt(args[1])
-        let valide = Object.keys(QUOTE)
+        let valide = Object.keys(match.quote) // Prende le chiavi dal match attuale
 
         if (!valide.includes(scommessa)) return m.reply(`『 ⚠️ 』 \`Esito errato. Scegli tra: 1, X, 2, GG, NG, OVER, UNDER\``)
         if (isNaN(puntata) || puntata <= 0) return m.reply(`『 ⚠️ 』 \`Puntata non valida.\``)
@@ -137,10 +155,10 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         user.euro -= puntata
         match.bets.push({ sender: m.sender, scommessa, puntata })
 
-        let moltiplicatore = QUOTE[scommessa];
+        // Usa la quota dinamica esatta per calcolare il potenziale
+        let moltiplicatore = match.quote[scommessa];
         let potenziale = Math.floor(puntata * moltiplicatore);
 
-        // 🎨 GRAFICA RICEVUTA (Stile .top Legam OS)
         let ricevuta = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 · 𝐓 𝐈 𝐂 𝐊 𝐄 𝐓  𝐋 𝐄 𝐆 𝐀 𝐌 ·
@@ -151,7 +169,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
 『 🎯 』 𝐃 𝐞 𝐭 𝐭 𝐚 𝐠 𝐥 𝐢
 · 𝐌𝐚𝐭𝐜𝐡 ➻ ${match.sq1} - ${match.sq2}
-· 𝐏𝐫𝐨𝐧𝐨𝐬𝐭𝐢𝐜𝐨 ➻ [ *${scommessa}* ]
+· 𝐏𝐫𝐨𝐧𝐨𝐬𝐭𝐢𝐜𝐨 ➻ [ *${scommessa}* ] (Quota: ${moltiplicatore.toFixed(2)})
 · 𝐏𝐮𝐧𝐭𝐚𝐭𝐚 ➻ *${formatNumber(puntata)} €*
 · 𝐏𝐨𝐭𝐞𝐧𝐳𝐢𝐚𝐥𝐞 ➻ *${formatNumber(potenziale)} €*
 
@@ -162,26 +180,30 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 }
 
 // ==========================================
-// TELECRONACA LIVE (GRAMMATICA PERFETTA)
+// TELECRONACA E SIMULATORE MATEMATICO
 // ==========================================
 async function avviaPartita(conn, chatId) {
     let match = global.virtualMatches[chatId]
     if (!match) return
-    
     match.state = 'playing'
 
-    let startMsg = `『 🚨 』 \`BOTTEGHINO CHIUSO!\`\n\n🏟️ Le squadre scendono in campo. L'arbitro guarda il cronometro... FISCHIO D'INIZIO! ⚽`
-    await conn.sendMessage(chatId, { text: startMsg })
+    await conn.sendMessage(chatId, { text: `『 🚨 』 \`BOTTEGHINO CHIUSO!\`\n\n🏟️ Le squadre scendono in campo. FISCHIO D'INIZIO! ⚽` })
 
-    let eventsCount = Math.floor(Math.random() * 3) + 4 // Da 4 a 6 eventi
+    let eventsCount = Math.floor(Math.random() * 3) + 4
     let minutiAzione = []
     for (let i = 0; i < eventsCount; i++) { minutiAzione.push(Math.floor(Math.random() * 89) + 1) }
     minutiAzione.sort((a, b) => a - b)
     
+    // Simula la partita basandosi sulla forza reale delle squadre
+    let r1 = serieAData[match.sq1].rating;
+    let r2 = serieAData[match.sq2].rating;
+    let totalR = r1 + r2;
+
     for (let i = 0; i < eventsCount; i++) {
-        await new Promise(resolve => setTimeout(resolve, 6000)) // Suspense tra le azioni
+        await new Promise(resolve => setTimeout(resolve, 6000)) 
         
-        let isTeam1 = Math.random() > 0.5
+        // Chi attacca? La squadra con più rating ha percentuali più alte di fare l'azione
+        let isTeam1 = Math.random() < (r1 / totalR) 
         let attackingTeam = isTeam1 ? match.sq1 : match.sq2
         let defendingTeam = isTeam1 ? match.sq2 : match.sq1
         let player = getPlayer(attackingTeam)
@@ -190,51 +212,44 @@ async function avviaPartita(conn, chatId) {
         let msg = ''
 
         if (actionType < 0.40) {
-            // GOAL
             if (isTeam1) match.score1++; else match.score2++;
             let stiliGol = [
-                `che fa partire un missile terra-aria da fuori area! Palla dritta all'incrocio dei pali!`,
+                `che fa partire un missile terra-aria da fuori area!`,
                 `che svetta più in alto di tutti su calcio d'angolo e insacca di testa!`,
-                `che riceve un filtrante perfetto, salta netto l'ultimo difensore e deposita in rete!`,
-                `che approfitta di una dormita clamorosa della difesa e non perdona da due passi!`
+                `che salta netto l'ultimo difensore e deposita in rete!`,
+                `che approfitta di una dormita clamorosa della difesa e non perdona!`
             ]
             msg = `⚽ 𝐆𝐎𝐎𝐎𝐀𝐀𝐀𝐋 𝐏𝐄𝐑 𝐈𝐋 ${attackingTeam.toUpperCase()}!!!\nRete di *${player}* ${stiliGol[Math.floor(Math.random()*stiliGol.length)]}\n\n📊 *${match.sq1} [ ${match.score1} - ${match.score2} ] ${match.sq2}*`
             await conn.sendMessage(chatId, { text: `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n${msg}` })
         } 
         else if (actionType < 0.60) {
-            // VAR (7 SECONDI REALI DI ATTESA)
-            let msgVar = `📺 𝐀𝐓𝐓𝐄𝐍𝐙𝐈𝐎𝐍𝐄 𝐀𝐋 𝐕𝐀𝐑!\nL'arbitro viene richiamato al monitor per un contatto molto sospetto su *${player}* nell'area di rigore del ${defendingTeam}...`
+            let msgVar = `📺 𝐀𝐓𝐓𝐄𝐍𝐙𝐈𝐎𝐍𝐄 𝐀𝐋 𝐕𝐀𝐑!\nCheck per un possibile fallo su *${player}* nell'area del ${defendingTeam}...`
             await conn.sendMessage(chatId, { text: `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n${msgVar}` })
-            
-            // 🔥 IL VAR DURA 7 SECONDI ESATTI 🔥
             await new Promise(resolve => setTimeout(resolve, 7000)) 
             
             if (Math.random() > 0.5) {
                 if (isTeam1) match.score1++; else match.score2++;
-                msg = `✅ 𝐃𝐄𝐂𝐈𝐒𝐈𝐎𝐍𝐄 𝐕𝐀𝐑: 𝐄' 𝐑𝐈𝐆𝐎𝐑𝐄 𝐏𝐄𝐑 𝐈𝐋 ${attackingTeam.toUpperCase()}!\nDal dischetto si presenta *${player}*... RETE! Esecuzione perfetta che spiazza il portiere!\n\n📊 *${match.sq1} [ ${match.score1} - ${match.score2} ] ${match.sq2}*`
+                msg = `✅ 𝐃𝐄𝐂𝐈𝐒𝐈𝐎𝐍𝐄 𝐕𝐀𝐑: 𝐄' 𝐑𝐈𝐆𝐎𝐑𝐄!\n*${player}* dal dischetto... RETE! Spiazza il portiere!\n\n📊 *${match.sq1} [ ${match.score1} - ${match.score2} ] ${match.sq2}*`
             } else {
-                msg = `❌ 𝐃𝐄𝐂𝐈𝐒𝐈𝐎𝐍𝐄 𝐕𝐀𝐑: 𝐍𝐈𝐄𝐍𝐓𝐄 𝐑𝐈𝐆𝐎𝐑𝐄!\nIl contatto di *${player}* è stato giudicato regolare. L'arbitro fa segno che si può continuare, palla al ${defendingTeam}.`
+                msg = `❌ 𝐃𝐄𝐂𝐈𝐒𝐈𝐎𝐍𝐄 𝐕𝐀𝐑: 𝐍𝐈𝐄𝐍𝐓𝐄 𝐑𝐈𝐆𝐎𝐑𝐄!\nSi continua a giocare, palla al ${defendingTeam}.`
             }
             await conn.sendMessage(chatId, { text: msg })
         }
         else if (actionType < 0.80) {
-            // MIRACOLO PORTIERE
-            msg = `😱 𝐌𝐈𝐑𝐀𝐂𝐎𝐋𝐎 𝐃𝐄𝐋 𝐏𝐎𝐑𝐓𝐈𝐄𝐑𝐄 𝐃𝐄𝐋 ${defendingTeam.toUpperCase()}!\n*${player}* calcia a botta sicura dall'area piccola, ma l'estremo difensore compie un intervento letteralmente paranormale!`
+            msg = `😱 𝐌𝐈𝐑𝐀𝐂𝐎𝐋𝐎 𝐃𝐄𝐋 𝐏𝐎𝐑𝐓𝐈𝐄𝐑𝐄!\n*${player}* calcia a botta sicura, ma l'estremo difensore del ${defendingTeam} fa una parata pazzesca!`
             await conn.sendMessage(chatId, { text: `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n${msg}` })
-        } 
-        else {
-            // CARTELLINO GIALLO
+        } else {
             let defPlayer = getPlayer(defendingTeam)
-            msg = `🟨 *𝐂𝐀𝐑𝐓𝐄𝐋𝐋𝐈𝐍𝐎 𝐆𝐈𝐀𝐋𝐋𝐎!*\nIntervento in netto ritardo di *${defPlayer}* (${defendingTeam}) per fermare il contropiede di ${player}. L'arbitro estrae il cartellino senza esitazioni.`
+            msg = `🟨 *𝐂𝐀𝐑𝐓𝐄𝐋𝐋𝐈𝐍𝐎 𝐆𝐈𝐀𝐋𝐋𝐎!*\nIntervento in ritardo di *${defPlayer}* (${defendingTeam}) per fermare il contropiede di ${player}.`
             await conn.sendMessage(chatId, { text: `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n${msg}` })
         }
     }
 
     await new Promise(resolve => setTimeout(resolve, 5000))
+    await finalizeGame(conn, chatId, match)
+}
 
-    // ==========================================
-    // CALCOLO VINCITE E RESOCONTO
-    // ==========================================
+async function finalizeGame(conn, chatId, match) {
     let is1 = match.score1 > match.score2
     let isX = match.score1 === match.score2
     let is2 = match.score1 < match.score2
@@ -253,20 +268,14 @@ async function avviaPartita(conn, chatId) {
     
     for (let b of match.bets) {
         let won = false
-        let multiplier = 0.0
-        
         switch(b.scommessa) {
-            case '1': if (is1) { won = true; multiplier = QUOTE['1']; } break;
-            case 'X': if (isX) { won = true; multiplier = QUOTE['X']; } break;
-            case '2': if (is2) { won = true; multiplier = QUOTE['2']; } break;
-            case 'GG': if (isGG) { won = true; multiplier = QUOTE['GG']; } break;
-            case 'NG': if (isNG) { won = true; multiplier = QUOTE['NG']; } break;
-            case 'OVER': if (isOver) { won = true; multiplier = QUOTE['OVER']; } break;
-            case 'UNDER': if (isUnder) { won = true; multiplier = QUOTE['UNDER']; } break;
+            case '1': won = is1; break; case 'X': won = isX; break; case '2': won = is2; break;
+            case 'GG': won = isGG; break; case 'NG': won = isNG; break;
+            case 'OVER': won = isOver; break; case 'UNDER': won = isUnder; break;
         }
 
         if (won) {
-            let winAmount = Math.floor(b.puntata * multiplier)
+            let winAmount = Math.floor(b.puntata * match.quote[b.scommessa]) // Usa la quota dinamica
             global.db.data.users[b.sender].euro += winAmount
             winnersTxt += `\n✅ @${b.sender.split('@')[0]} vince *+${formatNumber(winAmount)} €*`
         } else {
@@ -286,12 +295,7 @@ async function avviaPartita(conn, chatId) {
 
 │ 🏆 𝐑 𝐄 𝐒 𝐎 𝐂 𝐎 𝐍 𝐓 𝐎`
 
-    if (match.bets.length === 0) {
-        finale += `\n│ 😅 \`Nessuna giocata registrata.\``
-    } else {
-        finale += winnersTxt
-    }
-    
+    finale += match.bets.length === 0 ? `\n│ 😅 \`Nessuna giocata registrata.\`` : winnersTxt
     finale += `\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`
 
     await conn.sendMessage(chatId, { 
@@ -307,7 +311,6 @@ async function avviaPartita(conn, chatId) {
         }
     })
     
-    // Pulisce il db a fine partita
     delete global.virtualMatches[chatId]
 }
 
