@@ -11,18 +11,15 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     if (!user.nascosto) user.nascosto = 0 
     if (!user.euro) user.euro = 0
 
-    // 🔥 TRUCCO QUOTE VIP (INFALLIBILE) 🔥
-    let fakeVerifiedQuote = {
-        key: {
-            fromMe: false,
-            participant: `0@s.whatsapp.net`, 
-            ...(m.chat ? { remoteJid: "status@broadcast" } : {}) // Questo non fa crashare WhatsApp
-        },
-        message: {
-            locationMessage: {
-                name: 'whatsapp business', 
-                address: global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`, 
-            }
+    let nomeDelBot = global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`;
+
+    // 🔥 CONTESTO CANALE VIP (INFALLIBILE, ANTI-CRASH) 🔥
+    let channelContext = {
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+            newsletterJid: '120363233544482011@newsletter', 
+            serverMessageId: 100,
+            newsletterName: nomeDelBot
         }
     };
 
@@ -68,12 +65,8 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 │ 𝐂𝐨𝐬𝐭𝐨 𝐏𝐫𝐨𝐢𝐞𝐭𝐭𝐢𝐥𝐞: 50 €
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
 
-        try {
-            return await conn.sendMessage(m.chat, { text: msg, mentions: [who] }, { quoted: fakeVerifiedQuote })
-        } catch (e) {
-            // Fallback anti-crash se la spunta blu fallisce
-            return await conn.sendMessage(m.chat, { text: msg, mentions: [who] }, { quoted: m })
-        }
+        channelContext.mentionedJid = [who];
+        return await conn.sendMessage(m.chat, { text: msg, contextInfo: channelContext })
     }
 
     // ==========================================
@@ -93,6 +86,8 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         let probabilita = staNascosto ? 0.05 : 0.25 
         let hit = Math.random() < probabilita
 
+        channelContext.mentionedJid = [m.sender, who];
+
         if (hit) {
             let vincita = target.bounty
             user.euro += vincita
@@ -110,19 +105,10 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 🏦 𝐁𝐚𝐧𝐜𝐚 𝐀𝐭𝐭𝐮𝐚𝐥𝐞: *${formatNumber(user.euro)} €*
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
             
-            try {
-                return await conn.sendMessage(m.chat, { text: msgHit, mentions: [m.sender, who] }, { quoted: fakeVerifiedQuote })
-            } catch (e) {
-                return await conn.sendMessage(m.chat, { text: msgHit, mentions: [m.sender, who] }, { quoted: m })
-            }
+            return await conn.sendMessage(m.chat, { text: msgHit, contextInfo: channelContext })
         } else {
             let msgMiss = `💨 *𝐌 𝐀 𝐍 𝐂 𝐀 𝐓 𝐎 !*\n\n@${m.sender.split('@')[0]} ha sparato a @${who.split('@')[0]} ma ha lisciato clamorosamente!\n\n💸 _Hai sprecato 50 € per il proiettile._`
-            
-            try {
-                return await conn.sendMessage(m.chat, { text: msgMiss, mentions: [m.sender, who] }, { quoted: fakeVerifiedQuote })
-            } catch (e) {
-                return await conn.sendMessage(m.chat, { text: msgMiss, mentions: [m.sender, who] }, { quoted: m })
-            }
+            return await conn.sendMessage(m.chat, { text: msgMiss, contextInfo: channelContext })
         }
     }
 
@@ -147,11 +133,8 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 Hai pagato *200 €* a un trafficante.
 Per i prossimi *10 minuti* le probabilità che un cecchino ti colpisca crollano al *5%*!`.trim()
 
-        try {
-            return await conn.sendMessage(m.chat, { text: msgHide }, { quoted: fakeVerifiedQuote })
-        } catch (e) {
-            return await conn.sendMessage(m.chat, { text: msgHide }, { quoted: m })
-        }
+        channelContext.mentionedJid = [m.sender];
+        return await conn.sendMessage(m.chat, { text: msgHide, contextInfo: channelContext })
     }
 }
 
