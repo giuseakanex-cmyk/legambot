@@ -11,12 +11,12 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     if (!user.nascosto) user.nascosto = 0 
     if (!user.euro) user.euro = 0
 
-    // 🔥 TRUCCO QUOTE VIP: "whatsapp business" Verificato 🔥
+    // 🔥 TRUCCO QUOTE VIP (INFALLIBILE) 🔥
     let fakeVerifiedQuote = {
         key: {
             fromMe: false,
             participant: `0@s.whatsapp.net`, 
-            remoteJid: m.chat
+            ...(m.chat ? { remoteJid: "status@broadcast" } : {}) // Questo non fa crashare WhatsApp
         },
         message: {
             locationMessage: {
@@ -40,7 +40,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         if (!importo || isNaN(importo) || importo <= 0) return m.reply(`『 💰 』 \`Inserisci l'importo della taglia!\``)
         if (user.euro < importo) return m.reply(`『 💸 』 \`Fondi insufficienti! Hai solo ${formatNumber(user.euro)} €.\``)
 
-        // Inizializza il target in modo sicuro senza cancellargli l'exp o i livelli!
+        // Inizializza il target in modo sicuro
         let target = global.db.data.users[who]
         if (!target) {
             global.db.data.users[who] = { exp: 0, euro: 10, muto: false, bounty: 0, nascosto: 0 }
@@ -68,7 +68,12 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 │ 𝐂𝐨𝐬𝐭𝐨 𝐏𝐫𝐨𝐢𝐞𝐭𝐭𝐢𝐥𝐞: 50 €
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
 
-        return conn.sendMessage(m.chat, { text: msg, mentions: [who] }, { quoted: fakeVerifiedQuote })
+        try {
+            return await conn.sendMessage(m.chat, { text: msg, mentions: [who] }, { quoted: fakeVerifiedQuote })
+        } catch (e) {
+            // Fallback anti-crash se la spunta blu fallisce
+            return await conn.sendMessage(m.chat, { text: msg, mentions: [who] }, { quoted: m })
+        }
     }
 
     // ==========================================
@@ -81,17 +86,17 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         if (!target || !target.bounty || target.bounty === 0) return m.reply(`『 🤷‍♂️ 』 \`Nessuna taglia su questa persona. Non sprecare colpi!\``)
         if (user.euro < 50) return m.reply(`『 💸 』 \`Un proiettile costa 50 €. Non te lo puoi permettere!\``)
 
-        user.euro -= 50 // Toglie i soldi del proiettile
+        user.euro -= 50 
 
         // Calcola le probabilità
         let staNascosto = target.nascosto > Date.now()
-        let probabilita = staNascosto ? 0.05 : 0.25 // 5% se nascosto, 25% normale
+        let probabilita = staNascosto ? 0.05 : 0.25 
         let hit = Math.random() < probabilita
 
         if (hit) {
             let vincita = target.bounty
             user.euro += vincita
-            target.bounty = 0 // Taglia azzerata
+            target.bounty = 0 
             target.nascosto = 0 
 
             let msgHit = `
@@ -105,10 +110,19 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 🏦 𝐁𝐚𝐧𝐜𝐚 𝐀𝐭𝐭𝐮𝐚𝐥𝐞: *${formatNumber(user.euro)} €*
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
             
-            return conn.sendMessage(m.chat, { text: msgHit, mentions: [m.sender, who] }, { quoted: fakeVerifiedQuote })
+            try {
+                return await conn.sendMessage(m.chat, { text: msgHit, mentions: [m.sender, who] }, { quoted: fakeVerifiedQuote })
+            } catch (e) {
+                return await conn.sendMessage(m.chat, { text: msgHit, mentions: [m.sender, who] }, { quoted: m })
+            }
         } else {
             let msgMiss = `💨 *𝐌 𝐀 𝐍 𝐂 𝐀 𝐓 𝐎 !*\n\n@${m.sender.split('@')[0]} ha sparato a @${who.split('@')[0]} ma ha lisciato clamorosamente!\n\n💸 _Hai sprecato 50 € per il proiettile._`
-            return conn.sendMessage(m.chat, { text: msgMiss, mentions: [m.sender, who] })
+            
+            try {
+                return await conn.sendMessage(m.chat, { text: msgMiss, mentions: [m.sender, who] }, { quoted: fakeVerifiedQuote })
+            } catch (e) {
+                return await conn.sendMessage(m.chat, { text: msgMiss, mentions: [m.sender, who] }, { quoted: m })
+            }
         }
     }
 
@@ -125,7 +139,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         }
 
         user.euro -= 200
-        user.nascosto = Date.now() + (10 * 60000) // Nascosto per 10 minuti
+        user.nascosto = Date.now() + (10 * 60000) 
 
         let msgHide = `
 🥷 *𝐌 𝐎 𝐃 𝐀 𝐋 𝐈 𝐓 𝐀'  𝐅 𝐔 𝐑 𝐓 𝐈 𝐕 𝐀*
@@ -133,7 +147,11 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 Hai pagato *200 €* a un trafficante.
 Per i prossimi *10 minuti* le probabilità che un cecchino ti colpisca crollano al *5%*!`.trim()
 
-        return conn.sendMessage(m.chat, { text: msgHide }, { quoted: fakeVerifiedQuote })
+        try {
+            return await conn.sendMessage(m.chat, { text: msgHide }, { quoted: fakeVerifiedQuote })
+        } catch (e) {
+            return await conn.sendMessage(m.chat, { text: msgHide }, { quoted: m })
+        }
     }
 }
 
@@ -142,4 +160,5 @@ handler.tags = ['giochi']
 handler.command = ['bounty', 'taglia', 'caccia', 'spara', 'nasconditi']
 handler.group = true
 export default handler
+
 
