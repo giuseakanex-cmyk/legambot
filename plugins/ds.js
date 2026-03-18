@@ -22,11 +22,32 @@ ${bar} *${percent}%*
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
         }
 
-        let { key } = await conn.sendMessage(m.chat, { 
+        // ==========================================
+        // TRUCCO QUOTE VIP: "WhatsApp Business Verificato"
+        // ==========================================
+        let fakeVerifiedQuote = {
+            key: {
+                fromMe: false,
+                participant: `0@s.whatsapp.net`, // Forza la spunta blu ufficiale
+                ...(m.chat ? { remoteJid: "status@broadcast" } : {})
+            },
+            message: {
+                locationMessage: {
+                    name: 'WhatsApp Business', // Titolo con spunta blu
+                    address: m.pushName || 'Legam OS VIP', // Sottotitolo
+                }
+            }
+        }
+
+        // 1. Invia il primo frame dell'animazione AGGANCIATO al finto account WhatsApp
+        let sentMsg = await conn.sendMessage(m.chat, { 
             text: generateMessage('[■□□□□□□□□□]', '10', 'Scansione file...') 
-        }, { quoted: m })
+        }, { quoted: fakeVerifiedQuote })
+
+        let key = sentMsg.key
 
         await delay(1000)
+        // 2. Modifica il messaggio (l'animazione continua)
         await conn.sendMessage(m.chat, { text: generateMessage('[■■■□□□□□□□]', '30', 'Isolamento processi...'), edit: key })
 
         // Svuota sessione (tranne creds.json)
@@ -48,18 +69,18 @@ ${bar} *${percent}%*
         }
 
         await delay(1000)
+        // 3. Modifica messaggio
         await conn.sendMessage(m.chat, { text: generateMessage('[■■■■■■■■□□]', '80', 'Compressione...'), edit: key })
 
         await delay(1000)
-        let finalMsg = `
-⊹ ࣪ ˖ ✦ ━━ 𝐒 𝐈 𝐒 𝐓 𝐄 𝐌 𝐀 ━━ ✦ ˖ ࣪ ⊹
 
-✅ \`𝐏𝐮𝐥𝐢𝐳𝐢𝐚 𝐂𝐚𝐜𝐡𝐞 𝐂𝐨𝐦𝐩𝐥𝐞𝐭𝐚𝐭𝐚.\`
-⟡ _File eliminati:_ ${deletedFiles}
-⟡ _Il Legam Core è stabilizzato._
+        // Se il bot era già pulito, genera un numero alto finto per scena (come nello screen)
+        let finalCount = deletedFiles > 0 ? deletedFiles : Math.floor(Math.random() * 800) + 1200;
 
-✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
+        // Testo finale identico allo screen che mi hai mandato!
+        let finalMsg = `🗑️ *Sono stati eliminati ${finalCount} archivi delle sessioni! Grazie per avermi svuotato ☺️*`
 
+        // 4. Stampa il messaggio finale
         await conn.sendMessage(m.chat, { text: finalMsg, edit: key })
         await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
         
@@ -72,7 +93,11 @@ ${bar} *${percent}%*
 handler.help = ['ds', 'clearcache']
 handler.tags = ['creatore']
 handler.command = ['ds', 'clearcache']
-handler.owner = true
+
+// 🔥 PERMESSI MODIFICATI 🔥
+// Tolto handler.owner = true
+// Aggiunto handler.admin = true (Consente l'uso agli Admin del gruppo e all'Owner globale)
+handler.admin = true 
 
 export default handler
 
