@@ -140,6 +140,24 @@ export async function handler(chatUpdate) {
         m.text = extractedText;
     }
 
+    // ==========================================
+    // LEGAM OS - TERMINAL LOGGER (RIPRISTINATO)
+    // ==========================================
+    if (m.text) {
+        let tipoChat = m.isGroup ? 'Gruppo' : 'Privato';
+        let nomeUtente = m.pushName || m.sender.split('@')[0];
+        let orario = new Date().toLocaleTimeString('it-IT');
+        
+        console.log(
+            chalk.bgHex('#3b0d95').white.bold(' LEGAM OS ') + ' ' +
+            chalk.gray(`[${orario}]`) + ' ' +
+            chalk.cyan(`[${tipoChat}] `) +
+            chalk.green(`${nomeUtente}: `) +
+            chalk.white(m.text)
+        );
+    }
+    // ==========================================
+
     initResponseHandler(this)
 
     let user = null
@@ -275,11 +293,6 @@ export async function handler(chatUpdate) {
                         })
                     }
                 }
-
-                // ==========================================
-                // CANCELLI DI SICUREZZA
-                // Grazie all'integrazione sopra, i "Prescelti" passeranno perché !isMods diventa falso per loro!
-                // ==========================================
                 
                 if (m.isGroup && chat.modoadmin && !isAdmin && !isOwner && !isROwner && !isMods && !isPrems) continue;
                 if (settings.soloCreatore && !isROwner && !isOwner) continue;
