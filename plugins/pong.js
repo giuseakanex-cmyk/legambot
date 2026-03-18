@@ -2,7 +2,9 @@ import { performance } from 'perf_hooks';
 
 let handler = async (m, { conn, usedPrefix }) => {
   try {
+    // Ping Silenzioso: Calcolo reale della rete
     const startTime = performance.now();
+    await conn.sendPresenceUpdate('composing', m.chat);
     const endTime = performance.now();
     const latenza = (endTime - startTime).toFixed(2);
 
