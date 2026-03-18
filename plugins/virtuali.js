@@ -38,23 +38,18 @@ function calcolaQuote(sq1, sq2) {
     let r2 = serieAData[sq2].rating;
     let diff = r1 - r2;
 
-    // Calcolo probabilità (Normalizzate)
     let prob1 = 0.38 + (diff * 0.015);
     let prob2 = 0.38 - (diff * 0.015);
     let probX = 0.24 - (Math.abs(diff) * 0.005);
 
-    // Muro di sicurezza probabilità
     prob1 = Math.max(0.10, Math.min(0.85, prob1));
     prob2 = Math.max(0.10, Math.min(0.85, prob2));
     
-    // Ricalibro totale a 1 (100%)
     let total = prob1 + prob2 + probX;
     prob1 /= total; prob2 /= total; probX /= total;
 
-    // Margine del banco (5% di aggio come i veri bookmaker)
     const margin = 0.95; 
 
-    // OVER/UNDER & GG/NG dinamici
     let avgR = (r1 + r2) / 2;
     let probOver = 0.45 + (avgR > 85 ? 0.08 : 0) + (Math.abs(diff) > 15 ? 0.07 : 0);
     let probGG = 0.50 + (Math.abs(diff) < 10 ? 0.08 : -0.05);
@@ -81,7 +76,6 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         let sq1 = shuffled[0]
         let sq2 = shuffled[1]
 
-        // Calcola e blocca le quote per questo specifico match
         let quoteMatch = calcolaQuote(sq1, sq2)
 
         global.virtualMatches[chatId] = {
@@ -113,18 +107,35 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 👑 𝐎𝐖𝐍𝐄𝐑 ➤ 𝐆𝐈𝐔𝐒𝚵
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
 
-        await conn.sendMessage(chatId, {
-            image: { url: VIRTUALI_IMAGE_URL },
-            caption: msg,
-            contextInfo: {
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363233544482011@newsletter',
-                    newsletterName: "🎰 𝐋𝐞𝐠𝐚𝐦 𝐎𝐒 𝐁𝐞𝐭𝐭𝐢𝐧𝐠",
-                    serverMessageId: 100
+        // SISTEMA ANTI-CRASH IMMAGINE
+        try {
+            await conn.sendMessage(chatId, {
+                image: { url: VIRTUALI_IMAGE_URL },
+                caption: msg,
+                contextInfo: {
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: '120363233544482011@newsletter',
+                        newsletterName: "🎰 𝐋𝐞𝐠𝐚𝐦 𝐎𝐒 𝐁𝐞𝐭𝐭𝐢𝐧𝐠",
+                        serverMessageId: 100
+                    }
                 }
-            }
-        })
+            })
+        } catch (imgError) {
+            console.log("[LEGAM OS] Errore 404 Immagine Virtuali. Invio solo testo.");
+            // Se l'immagine fallisce (Errore 404), invia solo il testo senza crashare
+            await conn.sendMessage(chatId, {
+                text: msg,
+                contextInfo: {
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: '120363233544482011@newsletter',
+                        newsletterName: "🎰 𝐋𝐞𝐠𝐚𝐦 𝐎𝐒 𝐁𝐞𝐭𝐭𝐢𝐧𝐠",
+                        serverMessageId: 100
+                    }
+                }
+            })
+        }
 
         global.virtualMatches[chatId].timer = setTimeout(async () => {
             await avviaPartita(conn, chatId)
@@ -142,7 +153,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         
         let scommessa = args[0].toUpperCase()
         let puntata = parseInt(args[1])
-        let valide = Object.keys(match.quote) // Prende le chiavi dal match attuale
+        let valide = Object.keys(match.quote)
 
         if (!valide.includes(scommessa)) return m.reply(`『 ⚠️ 』 \`Esito errato. Scegli tra: 1, X, 2, GG, NG, OVER, UNDER\``)
         if (isNaN(puntata) || puntata <= 0) return m.reply(`『 ⚠️ 』 \`Puntata non valida.\``)
@@ -155,7 +166,6 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         user.euro -= puntata
         match.bets.push({ sender: m.sender, scommessa, puntata })
 
-        // Usa la quota dinamica esatta per calcolare il potenziale
         let moltiplicatore = match.quote[scommessa];
         let potenziale = Math.floor(puntata * moltiplicatore);
 
@@ -194,7 +204,6 @@ async function avviaPartita(conn, chatId) {
     for (let i = 0; i < eventsCount; i++) { minutiAzione.push(Math.floor(Math.random() * 89) + 1) }
     minutiAzione.sort((a, b) => a - b)
     
-    // Simula la partita basandosi sulla forza reale delle squadre
     let r1 = serieAData[match.sq1].rating;
     let r2 = serieAData[match.sq2].rating;
     let totalR = r1 + r2;
@@ -202,7 +211,6 @@ async function avviaPartita(conn, chatId) {
     for (let i = 0; i < eventsCount; i++) {
         await new Promise(resolve => setTimeout(resolve, 6000)) 
         
-        // Chi attacca? La squadra con più rating ha percentuali più alte di fare l'azione
         let isTeam1 = Math.random() < (r1 / totalR) 
         let attackingTeam = isTeam1 ? match.sq1 : match.sq2
         let defendingTeam = isTeam1 ? match.sq2 : match.sq1
@@ -317,3 +325,5 @@ async function finalizeGame(conn, chatId, match) {
 handler.command = ['virtuali', 'punta', 'bet']
 handler.group = true
 export default handler
+
+
