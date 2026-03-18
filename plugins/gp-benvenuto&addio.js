@@ -1,43 +1,45 @@
 let handler = m => m
 
 handler.before = async function (m, { conn }) {
-    // Se non è un gruppo o non è un messaggio di sistema (StubType), ignora
+    // 1. Filtro: Se non è un gruppo o non è un messaggio di sistema, ignora
     if (!m.isGroup || !m.messageStubType) return true;
 
     const chat = global.db.data.chats[m.chat];
     if (!chat) return true;
 
-    // 27 = Utente Aggiunto/Entrato | 28 = Rimosso | 32 = Uscito da solo
+    // 2. Definizione eventi: 
+    // 27 = Entrato/Aggiunto
+    // 28 = Rimosso da Admin
+    // 32 = Uscito da solo
     const isWelcome = m.messageStubType === 27;
     const isGoodbye = m.messageStubType === 28 || m.messageStubType === 32;
 
     if (!isWelcome && !isGoodbye) return true;
-    
-    // ⚠️ CONTROLLO ATTIVAZIONE: Se i welcome/goodbye sono spenti nel db, fermati.
-    // (Ricordati di scrivere .on welcome e .on goodbye nel gruppo per attivarli!)
+
+    // 3. Controllo Database (Attivabili con .on welcome / .on goodbye)
     if (isWelcome && !chat.welcome) return true;
     if (isGoodbye && !chat.goodbye) return true;
 
+    // 4. Recupero dell'utente coinvolto (StubParameters contiene lo JID dell'utente)
     const who = m.messageStubParameters[0];
     if (!who) return true;
 
     const cleanUserId = who.split('@')[0];
     
-    // 🔥 FIX METADATA: Recuperiamo i dati del gruppo in modo sicuro e forzato
+    // 5. Recupero Dati Gruppo
     let groupMetadata = global.groupCache.get(m.chat) || await conn.groupMetadata(m.chat).catch(_ => null)
     const groupName = groupMetadata?.subject || 'Questo Gruppo';
-    const memberCount = groupMetadata?.participants?.length || 'Sconosciuto';
+    const memberCount = groupMetadata?.participants?.length || 'N/A';
 
+    // 6. Foto Profilo con Fallback Anti-Crash
     let pfpUrl;
     try {
-        // Cerca la foto profilo in alta definizione dell'utente
         pfpUrl = await conn.profilePictureUrl(who, 'image');
     } catch (e) {
-        // 🔥 FIX IMGBB: Se l'utente non ha la foto, usa questa immagine stabile su Catbox
-        // (Un elegante avatar grigio di default, a prova di crash)
         pfpUrl = 'https://files.catbox.moe/57bmbv.jpg'; 
     }
 
+    // 7. Preparazione Testo
     const caption = isGoodbye
         ? `「  *BYE BYE* 」
 👤 *Utente:* @${cleanUserId}
@@ -49,15 +51,16 @@ handler.before = async function (m, { conn }) {
 🎉 *Gruppo:* ${groupName}
 👥 *Membri:* ${memberCount}`.trim();
 
+    // 8. Invio finale
     try {
-        // Invia il messaggio con tag
+        console.log(`[LEGAM OS] Rilevato ${isWelcome ? 'Welcome' : 'Goodbye'} per @${cleanUserId}`);
         await conn.sendMessage(m.chat, { 
             image: { url: pfpUrl }, 
             caption: caption, 
             mentions: [who] 
         });
     } catch (e) {
-        console.error("[LEGAM OS] Errore invio Welcome/Goodbye:", e);
+        console.error("[ERRORE WELCOME]", e);
     }
 
     return true;
