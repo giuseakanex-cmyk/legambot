@@ -1,76 +1,75 @@
-import { downloadContentFromMessage } from '@realvare/based'
-import { fileTypeFromBuffer } from 'file-type'
+import { Buffer } from 'buffer';
 
-const isViewOnceQuoted = (quoted) => {
-    return quoted?.viewOnce === true ||
-           quoted?.message?.viewOnceMessage ||
-           quoted?.message?.viewOnceMessageV2 ||
-           quoted?.message?.viewOnceMessageV2Extension ||
-           quoted?.msg?.viewOnceMessage ||
-           quoted?.msg?.viewOnceMessageV2 ||
-           quoted?.msg?.viewOnceMessageV2Extension ||
-           quoted?.key?.isViewOnce === true;
-};
+let handler = async (m, { conn }) => {
+    if (!m.quoted) {
+        throw '𝐑𝐈𝐒𝐏𝐎𝐍𝐃𝐈 𝐀𝐋 𝐌𝐄𝐒𝐒𝐀𝐆𝐆𝐈𝐎 ×𝟏 𝐃𝐀 𝐒𝐂𝐀𝐑𝐈𝐂𝐀𝐑𝐄.';
+    }
 
-const handler = async (m, { conn }) => {
+    let q = m.quoted;
+    let mime = (q.msg || q).mimetype || q.mediaType || '';
+
+    if (!/image|video|audio/g.test(mime)) {
+        throw `𝐓𝐈 𝐒𝐄𝐌𝐁𝐑𝐀 𝐔𝐍 𝐌𝐄𝐃𝐈𝐀 ×1?`;
+    }
+
+    let isViewOnce = false;
+    let originalMsgType = '';
     try {
-        if (!m.quoted) {
-            throw '『 ⚠️ 』- `Rispondi a un contenuto visualizzabile una volta`'
+        originalMsgType = Object.keys(q.message || {})[0];
+        if (originalMsgType === 'viewOnceMessageV2' || originalMsgType === 'viewOnceMessageV2Extension') {
+            isViewOnce = true;
         }
-        if (!isViewOnceQuoted(m.quoted)) {
-            throw '『 ⚠️ 』- `Questo non è un contenuto visualizzabile una volta`'
+    } catch (e) {
+        console.error("𝐄𝐑𝐑:", e);
+    }
+
+    if (isViewOnce) {
+        console.log(`𝐈𝐍𝐅𝐎: 𝐌𝐄𝐒𝐒𝐀𝐆𝐆𝐈𝐎 ${q.id.id} 𝐂𝐀𝐏𝐓𝐈𝐎𝐍 (${originalMsgType}). 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃𝐄𝐃.`);
+    }
+
+    try {
+        let buffer = await q.download?.();
+
+        if (!buffer) {
+             throw '𝐄𝐑𝐑𝐎𝐑𝐄.';
         }
 
-        const mtype = m.quoted.mtype
-        const messageContent = m.quoted[mtype]
-        
-        let messageType
-        if (mtype === 'videoMessage') messageType = 'video'
-        else if (mtype === 'imageMessage') messageType = 'image'
-        else if (mtype === 'audioMessage') messageType = 'audio'
-        else throw '❌ Formato non supportato. Sono supportati solo video, immagini e audio.'
-
-        let buffer
+        let caption = '';
         try {
-            const stream = await downloadContentFromMessage(messageContent, messageType)
-            const chunks = []
-            for await (const chunk of stream) {
-                chunks.push(chunk)
+            const msg = q.message;
+            const type = originalMsgType || Object.keys(msg)[0];
+            const messageContent = msg[type];
+
+            if (messageContent?.caption) {
+                caption = messageContent.caption;
+            } else if (messageContent?.message?.[Object.keys(messageContent.message)[0]]?.caption) {
+                caption = messageContent.message[Object.keys(messageContent.message)[0]].caption;
             }
-            buffer = Buffer.concat(chunks)
-        } catch (err) {
-            console.warn(`Fallback al metodo download() per ${messageType}:`, err.message)
-            buffer = await m.quoted.download()
+        } catch (captionError) {
+             console.error("𝐄𝐑𝐑𝐎𝐑𝐄 𝐂𝐀𝐏𝐓𝐈𝐎𝐍:", captionError);
+             caption = '';
         }
 
-        if (!buffer || buffer.length === 0) {
-            throw '❌ Impossibile scaricare il contenuto del messaggio.'
-        }
-
-        const fileDetails = await fileTypeFromBuffer(buffer)
-        const caption = m.quoted?.caption || ''
-
-        if (messageType === 'audio') {
-            await conn.sendFile(m.chat, buffer, `audio.${fileDetails?.ext || 'mp3'}`, '', m, false, {
-                mimetype: fileDetails?.mime || 'audio/mp4',
-                ptt: m.quoted.ptt || false,
-            })
-        } else {
-            const filename = `${messageType}.${fileDetails?.ext || (messageType === 'image' ? 'jpg' : 'mp4')}`
-            await conn.sendFile(m.chat, buffer, filename, caption, m)
+        if (/video/g.test(mime)) {
+            await conn.sendFile(m.chat, buffer, '𝐃𝐄𝐀𝐓𝐇.mp4', caption || '', m);
+        } else if (/image/g.test(mime)) {
+            await conn.sendFile(m.chat, buffer, '𝐃𝐄𝐀𝐓𝐇.jpg', caption || '', m);
+        } else if (/audio/g.test(mime)) {
+            await conn.sendFile(m.chat, buffer, '𝐃𝐄𝐀𝐓𝐇.mp3', '', m, { asDocument: false, mimetype: 'audio/mpeg', ptt: false });
         }
 
     } catch (e) {
-        console.error('Errore nel rivelare view once:', e)
-        const errorMessage = typeof e === 'string' ? e : (global.errore || '❌ Si è verificato un errore durante lelaborazione.')
-        await m.reply(errorMessage)
+        console.error(e);
+        if (e.message === '𝐄𝐑𝐑𝐎𝐑𝐄.') {
+             throw '𝐈𝐌𝐏𝐎𝐒𝐒𝐈𝐁𝐈𝐋𝐄 𝐏𝐑𝐎𝐂𝐄𝐃𝐄𝐑𝐄 𝐂𝐎𝐍 𝐈𝐋 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃.';
+        } else {
+            throw `𝐄𝐑𝐑𝐎𝐑𝐄: ${e.message || e}`;
+        }
     }
-}
+};
 
-handler.help = ['rivela']
-handler.tags = ['strumenti']
-handler.command = ['readviewonce', 'rivela', 'viewonce']
-handler.group = true
-handler.admin = true
+handler.help = ['rivela', 'readvo', 'getmedia'];
+handler.tags = ['strumenti'];
+handler.command = ['readviewonce', 'view', 'nocap', 'rivela', 'readvo', 'getmedia'];
 
-export default handler
+export default handler;
