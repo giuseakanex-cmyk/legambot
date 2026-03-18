@@ -49,7 +49,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     }, { quoted: m });
 
     // 5. Spunta verde di successo
-    await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
+    await conn.sendMessage(m.chat, { react: { text: '🏓', key: m.key } });
 
   } catch (err) {
     console.error("Errore nell'handler ping:", err);
