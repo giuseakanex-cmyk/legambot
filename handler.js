@@ -90,10 +90,11 @@ global.processedCalls = global.processedCalls || new Map()
 export async function participantsUpdate({ id, participants, action }) {
     if (global.opts['self']) return;
     if (global.isInit) return;
+    if (global.db.data.chats[id]?.rileva === false) return; // Mantiene il tuo blocco originale se rileva è falso
     
     let chat = global.db.data.chats[id] || {};
     let text = '';
-    let nomeDelBot = `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`;
+    let nomeDelBot = global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`;
 
     switch (action) {
         case 'add':
@@ -102,6 +103,7 @@ export async function participantsUpdate({ id, participants, action }) {
             if (chat.welcome) {
                 let groupMetadata = global.groupCache.get(id) || await this.groupMetadata(id).catch(_ => null) || {};
                 let groupName = groupMetadata.subject || 'Questo Gruppo';
+                let groupDesc = groupMetadata.desc ? groupMetadata.desc.toString() : 'Nessuna descrizione disponibile.';
 
                 for (let user of participants) {
                     let pp = 'https://files.catbox.moe/57bmbv.jpg'; // Immagine di Default
@@ -113,9 +115,22 @@ export async function participantsUpdate({ id, participants, action }) {
                         let apii = await this.getFile(pp).catch(() => ({ data: '' }));
                         let cleanUser = user.split('@')[0];
 
-                        text = action === 'add'
-                            ? `「  *BENVENUTO* 」\n𝗔𝗼 𝗮𝘁𝘁𝗲𝗻𝘁𝗼 𝗰𝗵𝗲 𝗾𝘂𝗮 𝗱𝗲𝗻𝘁𝗿𝗼 𝗳𝗮𝗻𝗻𝗼 𝗮 𝗯𝗮𝗹𝗱𝗼𝗿𝗶𝗮 𝗳𝗿𝗮𝘁è\n👤 *Utente:* @${cleanUser}\n🎉 *Gruppo:* ${groupName}`
-                            : `「  *BYE BYE* 」\n👤 *Utente:* @${cleanUser}\n👋🏻 *𝗛𝗮 𝗹𝗮𝘀𝗰𝗶𝗮𝘁𝗼 𝗹𝗮 𝗰𝗼𝗺𝗶𝘁𝗶𝘃𝗮:* ${groupName}`;
+                        // ==========================================
+                        // MOTORE VARIABILI CUSTOM: @user, @group, @desc
+                        // ==========================================
+                        if (action === 'add') {
+                            let customWelcome = chat.sWelcome || `「  *BENVENUTO* 」\n𝗔𝗼 𝗮𝘁𝘁𝗲𝗻𝘁𝗼 𝗰𝗵𝗲 𝗾𝘂𝗮 𝗱𝗲𝗻𝘁𝗿𝗼 𝗳𝗮𝗻𝗻𝗼 𝗮 𝗯𝗮𝗹𝗱𝗼𝗿𝗶𝗮 𝗳𝗿𝗮𝘁è\n👤 *Utente:* @user\n🎉 *Gruppo:* @group`;
+                            text = customWelcome
+                                .replace(/@user/g, `@${cleanUser}`)
+                                .replace(/@group/g, groupName)
+                                .replace(/@desc/g, groupDesc);
+                        } else {
+                            let customBye = chat.sBye || `「  *BYE BYE* 」\n👤 *Utente:* @user\n👋🏻 *𝗛𝗮 𝗹𝗮𝘀𝗰𝗶𝗮𝘁𝗼 𝗹𝗮 𝗰𝗼𝗺𝗶𝘁𝗶𝘃𝗮:* @group`;
+                            text = customBye
+                                .replace(/@user/g, `@${cleanUser}`)
+                                .replace(/@group/g, groupName)
+                                .replace(/@desc/g, groupDesc);
+                        }
 
                         await this.sendMessage(id, {
                             text: text,
@@ -277,23 +292,19 @@ export async function handler(chatUpdate) {
         let isAdmin = false
         
         // ==========================================
-        // LEGAM OS - SISTEMA GRADI
+        // LEGAM OS - SISTEMA GRADI E VARIABILI
         // ==========================================
         let isGiuse = global.owner.some(([num]) => num + '@s.whatsapp.net' === normalizedSender)
         let isROwner = isGiuse || global.owner.some(([num]) => num + '@s.whatsapp.net' === normalizedSender)
         let isOwner = isROwner || m.fromMe
         
-        // Gradi Globali (da config.js)
         let isGlobalMod = global.mods?.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(normalizedSender) || false
         let isGlobalPrem = global.prems?.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(normalizedSender) || false
 
-        // INTEGRAZIONE PRESCELTI
         let isGroupMod = m.isGroup && user && user.premium === true && user.premiumGroup === m.chat
         
-        // FUSIONE POTERI
         let isMods = isOwner || isGlobalMod || isGroupMod || false
         let isPrems = isROwner || isGlobalPrem || isGroupMod || false
-        // ==========================================
         
         if (m.isGroup) {
             if (!groupMetadata) {
