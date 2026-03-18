@@ -1,8 +1,8 @@
 // Plugin by giuse, chiedere permesso prima di utilizzare.
 global.virtualMatches = global.virtualMatches || {}
 
-// URL Immagine Ufficiale Virtuali
-const VIRTUALI_IMAGE_URL = 'https://i.ibb.co/XkXzT452/IMG-2039.jpg';
+// URL Immagine Stabile (Football Stadium HD) - Non va in down
+const VIRTUALI_IMAGE_URL = 'https://cdn.pixabay.com/photo/2016/11/29/03/53/architecture-1867187_1280.jpg';
 
 function formatNumber(num) {
     return new Intl.NumberFormat('it-IT').format(num)
@@ -32,7 +32,7 @@ function getPlayer(team) {
     return serieAData[team].roster[Math.floor(Math.random() * serieAData[team].roster.length)]
 }
 
-// ALGORITMO LEGAM: Generazione Quote Dinamiche in base alla forza
+// ALGORITMO LEGAM: Generazione Quote Dinamiche
 function calcolaQuote(sq1, sq2) {
     let r1 = serieAData[sq1].rating;
     let r2 = serieAData[sq2].rating;
@@ -107,7 +107,6 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 👑 𝐎𝐖𝐍𝐄𝐑 ➤ 𝐆𝐈𝐔𝐒𝚵
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
 
-        // SISTEMA ANTI-CRASH IMMAGINE
         try {
             await conn.sendMessage(chatId, {
                 image: { url: VIRTUALI_IMAGE_URL },
@@ -122,8 +121,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                 }
             })
         } catch (imgError) {
-            console.log("[LEGAM OS] Errore 404 Immagine Virtuali. Invio solo testo.");
-            // Se l'immagine fallisce (Errore 404), invia solo il testo senza crashare
+            console.log("[LEGAM OS] Server Immagini in Down. Invio solo testo.");
             await conn.sendMessage(chatId, {
                 text: msg,
                 contextInfo: {
@@ -189,9 +187,6 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     }
 }
 
-// ==========================================
-// TELECRONACA E SIMULATORE MATEMATICO
-// ==========================================
 async function avviaPartita(conn, chatId) {
     let match = global.virtualMatches[chatId]
     if (!match) return
@@ -244,7 +239,7 @@ async function avviaPartita(conn, chatId) {
             await conn.sendMessage(chatId, { text: msg })
         }
         else if (actionType < 0.80) {
-            msg = `😱 𝐌𝐈𝐑𝐀𝐂𝐎𝐋𝐎 𝐃𝐄𝐋 𝐏𝐎𝐑𝐓𝐈𝐄𝐑𝐄!\n*${player}* calcia a botta sicura, ma l'estremo difensore del ${defendingTeam} fa una parata pazzesca!`
+            msg = `😱 𝐌𝐈𝐑𝐀𝐂𝐎𝐋𝐎 𝐃𝐄𝐋 𝐏𝐎𝐓𝐈𝐄𝐑𝐄!\n*${player}* calcia a botta sicura, ma l'estremo difensore del ${defendingTeam} fa una parata pazzesca!`
             await conn.sendMessage(chatId, { text: `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n${msg}` })
         } else {
             let defPlayer = getPlayer(defendingTeam)
@@ -283,7 +278,7 @@ async function finalizeGame(conn, chatId, match) {
         }
 
         if (won) {
-            let winAmount = Math.floor(b.puntata * match.quote[b.scommessa]) // Usa la quota dinamica
+            let winAmount = Math.floor(b.puntata * match.quote[b.scommessa])
             global.db.data.users[b.sender].euro += winAmount
             winnersTxt += `\n✅ @${b.sender.split('@')[0]} vince *+${formatNumber(winAmount)} €*`
         } else {
@@ -313,7 +308,7 @@ async function finalizeGame(conn, chatId, match) {
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
                 newsletterJid: '120363233544482011@newsletter',
-                newsletterName: "⚽ 𝐋𝐞𝐠𝐚𝐦 𝐎𝐒 𝐑𝐞𝐬𝐮𝐥𝐭𝐬",
+                newsletterName: "⚽ 𝐋𝐞𝐠𝐚𝐦 𝐎𝐒 𝐑𝐞𝐬𝐮𝐥𝐭s",
                 serverMessageId: 100
             }
         }
@@ -325,5 +320,4 @@ async function finalizeGame(conn, chatId, match) {
 handler.command = ['virtuali', 'punta', 'bet']
 handler.group = true
 export default handler
-
 
