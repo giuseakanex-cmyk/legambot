@@ -140,24 +140,6 @@ export async function handler(chatUpdate) {
         m.text = extractedText;
     }
 
-    // ==========================================
-    // LEGAM OS - TERMINAL LOGGER (RIPRISTINATO)
-    // ==========================================
-    if (m.text) {
-        let tipoChat = m.isGroup ? 'Gruppo' : 'Privato';
-        let nomeUtente = m.pushName || m.sender.split('@')[0];
-        let orario = new Date().toLocaleTimeString('it-IT');
-        
-        console.log(
-            chalk.bgHex('#3b0d95').white.bold(' LEGAM OS ') + ' ' +
-            chalk.gray(`[${orario}]`) + ' ' +
-            chalk.cyan(`[${tipoChat}] `) +
-            chalk.green(`${nomeUtente}: `) +
-            chalk.white(m.text)
-        );
-    }
-    // ==========================================
-
     initResponseHandler(this)
 
     let user = null
@@ -210,10 +192,10 @@ export async function handler(chatUpdate) {
         let isGlobalMod = global.mods?.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(normalizedSender) || false
         let isGlobalPrem = global.prems?.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(normalizedSender) || false
 
-        // 🔥 INTEGRAZIONE PRESCELTI: Controlla se l'utente è nello Staff/Premium di QUESTO gruppo
+        // INTEGRAZIONE PRESCELTI
         let isGroupMod = m.isGroup && user && user.premium === true && user.premiumGroup === m.chat
         
-        // FUSIONE POTERI: I prescelti ottengono il grado isMods e isPrems all'interno del gruppo
+        // FUSIONE POTERI
         let isMods = isOwner || isGlobalMod || isGroupMod || false
         let isPrems = isROwner || isGlobalPrem || isGroupMod || false
         // ==========================================
@@ -244,6 +226,37 @@ export async function handler(chatUpdate) {
                 })
             }
         }
+
+        // ==========================================
+        // LEGAM OS - TERMINAL LOGGER VIP
+        // ==========================================
+        if (m.text || m.mtype) {
+            let testoLog = m.text || `[Media: ${m.mtype}]`;
+            let tipoChat = m.isGroup ? 'Gruppo' : 'Privato';
+            let nomeUtente = m.pushName || 'Sconosciuto';
+            let numero = normalizedSender ? normalizedSender.split('@')[0] : 'Sconosciuto';
+            let orario = new Date().toLocaleTimeString('it-IT');
+            
+            // Determina il Ruolo Visivo
+            let ruolo = chalk.gray('[👤 UTENTE]');
+            if (isOwner) ruolo = chalk.magenta.bold('[👑 OWNER]');
+            else if (isAdmin) ruolo = chalk.blue.bold('[🛡️ ADMIN]');
+            else if (isPrems || isMods) ruolo = chalk.yellow.bold('[💎 VIP]');
+
+            // Colora il comando
+            let isCmd = m.text && /^[.#!\\/]/.test(m.text.trim());
+            let testoColorato = isCmd ? chalk.yellowBright.bold(testoLog) : chalk.white(testoLog);
+
+            console.log(
+                chalk.bgHex('#3b0d95').white.bold(' LEGAM OS ') + ' ' +
+                chalk.gray(`[${orario}]`) + ' ' +
+                chalk.cyan(`[${tipoChat}]`) + ' ' +
+                ruolo + ' ' +
+                chalk.green(`${nomeUtente} `) + chalk.gray(`(${numero}) > `) +
+                testoColorato
+            );
+        }
+        // ==========================================
 
         const ___dirname = join(path.dirname(fileURLToPath(import.meta.url)), './plugins')
         for (let name in global.plugins) {
