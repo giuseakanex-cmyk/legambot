@@ -48,10 +48,10 @@ let handler = async (m, { conn, usedPrefix }) => {
 
         // 🔘 BOTTONI CON IL FONT VIP
         const buttons = [
-            { buttonId: usedPrefix + "ds", buttonText: { displayText: "🔄 𝗦𝘃𝘂𝗼𝘁𝗮 𝗦𝗲𝘀𝘀𝗶𝗼𝗻𝗶" }, type: 1 },
+            { buttonId: usedPrefix + "ds", buttonText: { displayText: "🗑️ 𝗦𝘃𝘂𝗼𝘁𝗮 𝗦𝗲𝘀𝘀𝗶𝗼𝗻𝗶" }, type: 1 },
             { buttonId: usedPrefix + "ping", buttonText: { displayText: "⚡ 𝗣𝗶𝗻𝗴" }, type: 1 },
             { buttonId: usedPrefix + "pong", buttonText: { displayText: "🏓 𝗣𝗼𝗻𝗴" }, type: 1 },
-            { buttonId: usedPrefix + "speed", buttonText: { displayText: "📊 𝗦𝗽𝗲𝗲𝗱" }, type: 1 }
+            { buttonId: usedPrefix + "speed", buttonText: { displayText: "🏎️ 𝗦𝗽𝗲𝗲𝗱" }, type: 1 }
         ]
 
         // Invio immediato (Niente animazioni, niente react per non far crashare i bottoni)
