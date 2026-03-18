@@ -10,6 +10,7 @@ import { getAggregateVotesInPollMessage, toJid } from '@realvare/baileys'
 global.ignoredUsersGlobal = new Set()
 global.ignoredUsersGroup = {}
 global.groupSpam = {}
+global.processedWelcome = new Set() // Set per evitare i doppi messaggi di benvenuto
 
 if (!global.groupCache) global.groupCache = new NodeCache({ stdTTL: 5 * 60, useClones: false })
 if (!global.jidCache) global.jidCache = new NodeCache({ stdTTL: 600, useClones: false })
@@ -85,125 +86,100 @@ function initResponseHandler(conn) {
 global.processedCalls = global.processedCalls || new Map()
 
 // ==========================================
-// LEGAM OS - GESTORE ENTRATE/USCITE E GRADI (NATIVO)
+// LEGAM OS - GESTORE EVENTI GRUPPO NATIVO (SCAVALCA I LIMITI)
 // ==========================================
 export async function participantsUpdate({ id, participants, action }) {
-    if (global.opts['self']) return;
-    if (global.isInit) return;
-    if (global.db.data.chats[id]?.rileva === false) return; // Mantiene il tuo blocco originale se rileva è falso
-    
-    let chat = global.db.data.chats[id] || {};
-    let text = '';
-    let nomeDelBot = global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`;
+    try {
+        // 🔥 ANTI DOPPIONE (Se il sistema invia due volte lo stesso evento nel giro di 10 secondi, lo ignora)
+        let eventKey = `${action}_${id}_${participants.join('')}`
+        if (global.processedWelcome.has(eventKey)) return;
+        global.processedWelcome.add(eventKey);
+        setTimeout(() => global.processedWelcome.delete(eventKey), 10000);
 
-    switch (action) {
-        case 'add':
-        case 'remove':
-            // ⚠️ FUNZIONA SOLO SE HAI SCRITTO .on welcome NEL GRUPPO
-            if (chat.welcome) {
-                let groupMetadata = global.groupCache.get(id) || await this.groupMetadata(id).catch(_ => null) || {};
-                let groupName = groupMetadata.subject || 'Questo Gruppo';
-                let groupDesc = groupMetadata.desc ? groupMetadata.desc.toString() : 'Nessuna descrizione disponibile.';
+        console.log(chalk.bgHex('#3b0d95').white.bold(' LEGAM OS ') + chalk.yellow(` 🚨 Rilevato evento: ${action} nel gruppo ${id.split('@')[0]}`));
 
-                for (let user of participants) {
-                    let pp = 'https://files.catbox.moe/57bmbv.jpg'; // Immagine di Default
-                    try {
-                        pp = await this.profilePictureUrl(user, 'image');
-                    } catch (e) {}
+        if (global.opts['self']) return;
+        
+        let chat = global.db.data.chats[id] || {};
+        let nomeDelBot = global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`;
 
-                    try {
-                        let apii = await this.getFile(pp).catch(() => ({ data: '' }));
-                        let cleanUser = user.split('@')[0];
+        // CONTROLLO ATTIVAZIONE DEL DATABASE (Richiede .attiva welcome)
+        if (!chat.welcome && (action === 'add' || action === 'remove' || action === 'promote' || action === 'demote')) {
+            console.log(chalk.red(`[!] Funzione Welcome/Goodbye DISATTIVATA per il gruppo ${id.split('@')[0]}.`));
+            return;
+        }
 
-                        // ==========================================
-                        // MOTORE VARIABILI CUSTOM: @user, @group, @desc
-                        // ==========================================
-                        if (action === 'add') {
-                            let customWelcome = chat.sWelcome || `「  *BENVENUTO* 」\n𝗔𝗼 𝗮𝘁𝘁𝗲𝗻𝘁𝗼 𝗰𝗵𝗲 𝗾𝘂𝗮 𝗱𝗲𝗻𝘁𝗿𝗼 𝗳𝗮𝗻𝗻𝗼 𝗮 𝗯𝗮𝗹𝗱𝗼𝗿𝗶𝗮 𝗳𝗿𝗮𝘁è\n👤 *Utente:* @user\n🎉 *Gruppo:* @group`;
-                            text = customWelcome
-                                .replace(/@user/g, `@${cleanUser}`)
-                                .replace(/@group/g, groupName)
-                                .replace(/@desc/g, groupDesc);
-                        } else {
-                            let customBye = chat.sBye || `「  *BYE BYE* 」\n👤 *Utente:* @user\n👋🏻 *𝗛𝗮 𝗹𝗮𝘀𝗰𝗶𝗮𝘁𝗼 𝗹𝗮 𝗰𝗼𝗺𝗶𝘁𝗶𝘃𝗮:* @group`;
-                            text = customBye
-                                .replace(/@user/g, `@${cleanUser}`)
-                                .replace(/@group/g, groupName)
-                                .replace(/@desc/g, groupDesc);
+        let groupMetadata = global.groupCache.get(id) || await this.groupMetadata(id).catch(_ => null) || {};
+        let groupName = groupMetadata.subject || 'Questo Gruppo';
+        let groupDesc = groupMetadata.desc ? groupMetadata.desc.toString() : 'Nessuna descrizione disponibile.';
+
+        for (let user of participants) {
+            let pp = 'https://files.catbox.moe/57bmbv.jpg'; // Default Anti-Crash
+            try { pp = await this.profilePictureUrl(user, 'image'); } catch (e) {}
+
+            try {
+                let apii = await this.getFile(pp).catch(() => ({ data: '' }));
+                let cleanUser = user.split('@')[0];
+                let text = '';
+
+                // MOTORE VARIABILI CUSTOM: @user, @group, @desc
+                if (action === 'add') {
+                    let customWelcome = chat.sWelcome || `「  *BENVENUTO* 」\n𝗔𝗼 𝗮𝘁𝘁𝗲𝗻𝘁𝗼 𝗰𝗵𝗲 𝗾𝘂𝗮 𝗱𝗲𝗻𝘁𝗿𝗼 𝗳𝗮𝗻𝗻𝗼 𝗮 𝗯𝗮𝗹𝗱𝗼𝗿𝗶𝗮 𝗳𝗿𝗮𝘁è\n👤 *Utente:* @user\n🎉 *Gruppo:* @group`;
+                    text = customWelcome.replace(/@user/g, `@${cleanUser}`).replace(/@group/g, groupName).replace(/@desc/g, groupDesc);
+                } else if (action === 'remove') {
+                    let customBye = chat.sBye || `「  *BYE BYE* 」\n👤 *Utente:* @user\n👋🏻 *𝗛𝗮 𝗹𝗮𝘀𝗰𝗶𝗮𝘁𝗼 𝗹𝗮 𝗰𝗼𝗺𝗶𝘁𝗶𝘃𝗮:* @group`;
+                    text = customBye.replace(/@user/g, `@${cleanUser}`).replace(/@group/g, groupName).replace(/@desc/g, groupDesc);
+                } else if (action === 'promote') {
+                    text = `@${cleanUser} \`\`\`è stato promosso Admin. Porta rispetto.\`\`\``;
+                } else if (action === 'demote') {
+                    text = `@${cleanUser} \`\`\`è stato degradato. Non è più Admin.\`\`\``;
+                }
+
+                if (!text) continue;
+
+                // INVIO GRAFICO CON FINTA NEWSLETTER
+                await this.sendMessage(id, {
+                    text: text,
+                    mentions: [user],
+                    contextInfo: {
+                        mentionedJid: [user],
+                        isForwarded: true,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: '120363233544482011@newsletter',
+                            serverMessageId: 100,
+                            newsletterName: nomeDelBot
+                        },
+                        externalAdReply: {
+                            title: action === 'add' ? '𝐁𝐞𝐧𝐯𝐞𝐧𝐮𝐭𝐨 𝐧𝐞𝐥 𝐆𝐫𝐮𝐩𝐩𝐨 👑' : (action === 'remove' ? '𝐀𝐝𝐝𝐢𝐨 👋🏻' : '𝐀𝐠𝐠𝐢𝐨𝐫𝐧𝐚𝐦𝐞𝐧𝐭𝐨 👑'),
+                            body: 'Legam OS System',
+                            previewType: "PHOTO",
+                            thumbnailUrl: pp,
+                            thumbnail: apii.data,
+                            mediaType: 1
                         }
-
-                        await this.sendMessage(id, {
-                            text: text,
-                            mentions: [user],
-                            contextInfo: {
-                                mentionedJid: [user],
-                                isForwarded: true,
-                                forwardedNewsletterMessageInfo: {
-                                    newsletterJid: '120363233544482011@newsletter',
-                                    serverMessageId: 100,
-                                    newsletterName: nomeDelBot
-                                },
-                                externalAdReply: {
-                                    title: action === 'add' ? '𝐁𝐞𝐧𝐯𝐞𝐧𝐮𝐭𝐨 𝐧𝐞𝐥 𝐆𝐫𝐮𝐩𝐩𝐨 👑' : '𝐀𝐝𝐝𝐢𝐨 👋🏻',
-                                    body: 'Legam OS System',
-                                    previewType: "PHOTO",
-                                    thumbnailUrl: pp,
-                                    thumbnail: apii.data,
-                                    mediaType: 1
-                                }
-                            }
-                        });
-                    } catch (err) {
-                        console.error("[LEGAM OS] Errore invio Welcome/Goodbye:", err);
                     }
-                }
+                });
+                console.log(chalk.green(`[✓] Messaggio Evento (${action}) inviato con successo!`));
+            } catch (err) {
+                console.error(chalk.red("[X] Errore invio Welcome/Goodbye:"), err);
             }
-            break;
-
-        case 'promote':
-        case 'demote':
-            // GESTIONE PROMOZIONI E RETROCESSIONI (Admin)
-            if (chat.welcome) {
-                for (let user of participants) {
-                    let pp = 'https://files.catbox.moe/57bmbv.jpg';
-                    try { pp = await this.profilePictureUrl(user, 'image'); } catch (e) {}
-
-                    try {
-                        let apii = await this.getFile(pp).catch(() => ({ data: '' }));
-                        text = action === 'promote' 
-                            ? `@${user.split('@')[0]} \`\`\`è stato promosso Admin. Porta rispetto.\`\`\`` 
-                            : `@${user.split('@')[0]} \`\`\`è stato degradato. Non è più Admin.\`\`\``;
-
-                        await this.sendMessage(id, { 
-                            text: text, 
-                            mentions: [user],
-                            contextInfo: { 
-                                mentionedJid: [user],
-                                isForwarded: true, 
-                                forwardedNewsletterMessageInfo: {
-                                    newsletterJid: '120363233544482011@newsletter',
-                                    serverMessageId: 100, 
-                                    newsletterName: nomeDelBot 
-                                },
-                                externalAdReply: {
-                                    title: action === 'promote' ? '𝐌𝐞𝐬𝐬𝐚𝐠𝐠𝐢𝐨 𝐝𝐢 𝐏𝐫𝐨𝐦𝐨𝐳𝐢𝐨𝐧𝐞 👑' : '𝐌𝐞𝐬𝐬𝐚𝐠𝐠𝐢𝐨 𝐝𝐢 𝐑𝐞𝐭𝐫𝐨𝐜𝐞𝐬𝐬𝐢𝐨𝐧𝐞 🙇🏻‍♂️',
-                                    body: 'Legam OS System',
-                                    previewType: "PHOTO", 
-                                    thumbnailUrl: pp, 
-                                    thumbnail: apii.data,
-                                    mediaType: 1
-                                }
-                            }
-                        });
-                    } catch (e) {}
-                }
-            }
-            break;
+        }
+    } catch (criticalError) {
+        console.error(chalk.red("[X] Errore Critico in participantsUpdate:"), criticalError);
     }
 }
 // ==========================================
 
 export async function handler(chatUpdate) {
+    // 🔥 FORZATURA DELL'EVENTO BENVENUTO (Nel caso il main.js sia corrotto) 🔥
+    if (!this.welcomeSensorActive) {
+        console.log(chalk.bgHex('#3b0d95').white.bold(' LEGAM OS ') + chalk.green(' Sensori Entrata/Uscita FORZATI attivati con successo.'));
+        this.ev.on('group-participants.update', async (update) => {
+            await participantsUpdate.call(this, update);
+        });
+        this.welcomeSensorActive = true;
+    }
+
     this.msgqueque = this.msgqueque || []
     this.uptime = this.uptime || Date.now()
     if (!chatUpdate) return
@@ -276,7 +252,7 @@ export async function handler(chatUpdate) {
             isBanned: false, welcome: false, goodbye: false, ai: false, vocali: false,
             antiporno: false, antioneview: false, autolevelup: false, antivoip: false,
             rileva: false, modoadmin: false, antiLink: false, antiLink2: false,
-            reaction: false, antispam: false, expired: 0, users: {}
+            reaction: false, antispam: false, expired: 0, users: {}, sWelcome: '', sBye: ''
         })
         let settings = global.db.data.settings[this.user.jid] || (global.db.data.settings[this.user.jid] = {
             autoread: false, jadibotmd: false, antiPrivate: true, soloCreatore: false, status: 0
@@ -291,9 +267,6 @@ export async function handler(chatUpdate) {
         let isBotAdmin = false
         let isAdmin = false
         
-        // ==========================================
-        // LEGAM OS - SISTEMA GRADI E VARIABILI
-        // ==========================================
         let isGiuse = global.owner.some(([num]) => num + '@s.whatsapp.net' === normalizedSender)
         let isROwner = isGiuse || global.owner.some(([num]) => num + '@s.whatsapp.net' === normalizedSender)
         let isOwner = isROwner || m.fromMe
@@ -333,9 +306,6 @@ export async function handler(chatUpdate) {
             }
         }
 
-        // ==========================================
-        // LEGAM OS - TERMINAL LOGGER VIP
-        // ==========================================
         if (m.text || m.mtype) {
             let testoLog = m.text || `[Media: ${m.mtype}]`;
             let tipoChat = m.isGroup ? 'Gruppo' : 'Privato';
@@ -343,13 +313,11 @@ export async function handler(chatUpdate) {
             let numero = normalizedSender ? normalizedSender.split('@')[0] : 'Sconosciuto';
             let orario = new Date().toLocaleTimeString('it-IT');
             
-            // Determina il Ruolo Visivo
             let ruolo = chalk.gray('[👤 UTENTE]');
             if (isOwner) ruolo = chalk.magenta.bold('[👑 OWNER]');
             else if (isAdmin) ruolo = chalk.blue.bold('[🛡️ ADMIN]');
             else if (isPrems || isMods) ruolo = chalk.yellow.bold('[💎 VIP]');
 
-            // Colora il comando
             let isCmd = m.text && /^[.#!\\/]/.test(m.text.trim());
             let testoColorato = isCmd ? chalk.yellowBright.bold(testoLog) : chalk.white(testoLog);
 
@@ -362,7 +330,6 @@ export async function handler(chatUpdate) {
                 testoColorato
             );
         }
-        // ==========================================
 
         const ___dirname = join(path.dirname(fileURLToPath(import.meta.url)), './plugins')
         for (let name in global.plugins) {
@@ -492,7 +459,6 @@ export async function handler(chatUpdate) {
     }
 }
 
-// MESSAGGI LEGAM OS
 global.dfail = async (type, m, conn) => {
     const msg = {
         rowner:   '『 𝐋𝐄𝐆𝐀𝐌 𝐎𝐒 — 𝐎𝐖𝐍𝐄𝐑 』\n\n👑 *RANGO INSUFFICIENTE*\n╰➤ *Richiesto:* Owner Fondatore\n\n⚡ _Solo chi ha dato vita al bot può evocare questo potere._',
