@@ -6,58 +6,87 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     let user = global.db.data.users[m.sender]
     let who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : null
 
-    // Inizializza i dati se non esistono
+    // Inizializza i dati di default per il mittente se mancano
     if (!user.bounty) user.bounty = 0
-    if (!user.nascosto) user.nascosto = 0 // Timestamp per nascondersi
+    if (!user.nascosto) user.nascosto = 0 
+    if (!user.euro) user.euro = 0
+
+    // 🔥 TRUCCO QUOTE VIP: "whatsapp business" Verificato 🔥
+    let fakeVerifiedQuote = {
+        key: {
+            fromMe: false,
+            participant: `0@s.whatsapp.net`, 
+            remoteJid: m.chat
+        },
+        message: {
+            locationMessage: {
+                name: 'whatsapp business', 
+                address: global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`, 
+            }
+        }
+    };
 
     // ==========================================
-    // COMANDO 1: .bounty @utente [importo]
+    // COMANDO 1: .taglia @utente [importo]
     // ==========================================
-    if (command === 'bounty' || command === 'caccia') {
-        if (!who) return m.reply(`🎯 Devi taggare a chi vuoi mettere la taglia!\n_Es: ${usedPrefix}bounty @utente 5000_`)
-        if (!args[1]) return m.reply(`💰 Inserisci l'importo della taglia!`)
-        if (who === m.sender) return m.reply(`Non puoi metterti una taglia da solo, scemo!`)
+    if (command === 'bounty' || command === 'taglia' || command === 'caccia') {
+        if (!who) return m.reply(`『 ⚠️ 』 \`Devi taggare a chi vuoi mettere la taglia!\`\n_Es: ${usedPrefix}taglia @utente 5000_`)
+        if (who === m.sender) return m.reply(`『 🛑 』 \`Non puoi metterti una taglia da solo, furbo!\``)
 
-        let importo = parseInt(args[1])
-        if (isNaN(importo) || importo <= 0) return m.reply(`Inserisci un numero valido!`)
-        if (user.euro < importo) return m.reply(`💸 Non hai abbastanza fondi! Hai solo *${formatNumber(user.euro)} €*.`)
+        // Trova il numero nell'array degli argomenti (ignorando il tag)
+        let importoStr = args.find(a => !a.includes('@'))
+        let importo = parseInt(importoStr)
 
+        if (!importo || isNaN(importo) || importo <= 0) return m.reply(`『 💰 』 \`Inserisci l'importo della taglia!\``)
+        if (user.euro < importo) return m.reply(`『 💸 』 \`Fondi insufficienti! Hai solo ${formatNumber(user.euro)} €.\``)
+
+        // Inizializza il target in modo sicuro senza cancellargli l'exp o i livelli!
         let target = global.db.data.users[who]
-        if (!target) target = global.db.data.users[who] = { euro: 0, bounty: 0 }
+        if (!target) {
+            global.db.data.users[who] = { exp: 0, euro: 10, muto: false, bounty: 0, nascosto: 0 }
+            target = global.db.data.users[who]
+        }
         if (!target.bounty) target.bounty = 0
+        if (!target.nascosto) target.nascosto = 0
 
+        // Esegue la transazione
         user.euro -= importo
-        target.bounty += importo // Si somma alle taglie precedenti!
+        target.bounty += importo 
 
         let msg = `
-╭━━✧🏴‍☠️ WANTED 🏴‍☠️✧━━╮
-🩸 È STATA MESSA UNA TAGLIA!
-👤 Bersaglio: @${who.split('@')[0]}
-💰 Ricompensa: *${formatNumber(target.bounty)} €*
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
+· ☠️ 𝐖 𝐀 𝐍 𝐓 𝐄 𝐃 ☠️ ·
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 
-🔫 Usa *${usedPrefix}spara @utente* per incassarla!
-(Attenzione: un proiettile costa 50 €)
-╰━━━━━━✧✦━━━━━━━╯`.trim()
+『 🎯 』 𝐁 𝐞 𝐫 𝐬 𝐚 𝐠 𝐥 𝐢 𝐨
+· @${who.split('@')[0]}
 
-        return conn.sendMessage(m.chat, { text: msg, mentions: [who] })
+『 💰 』 𝐓 𝐚 𝐠 𝐥 𝐢 𝐚
+· *${formatNumber(target.bounty)} €*
+
+│ 🔫 Usa: *${usedPrefix}spara @utente*
+│ 𝐂𝐨𝐬𝐭𝐨 𝐏𝐫𝐨𝐢𝐞𝐭𝐭𝐢𝐥𝐞: 50 €
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
+
+        return conn.sendMessage(m.chat, { text: msg, mentions: [who] }, { quoted: fakeVerifiedQuote })
     }
 
     // ==========================================
     // COMANDO 2: .spara @utente
     // ==========================================
     if (command === 'spara') {
-        if (!who) return m.reply(`🔫 A chi vuoi sparare? Tagga il bersaglio!`)
+        if (!who) return m.reply(`『 🔫 』 \`A chi vuoi sparare? Tagga il bersaglio!\``)
         let target = global.db.data.users[who]
         
-        if (!target || !target.bounty || target.bounty === 0) return m.reply(`🤷‍♂️ Non c'è nessuna taglia su questa persona. Non sprecare proiettili!`)
-        if (user.euro < 50) return m.reply(`💸 Un proiettile costa 50 €. Non te lo puoi permettere, pezzente!`)
+        if (!target || !target.bounty || target.bounty === 0) return m.reply(`『 🤷‍♂️ 』 \`Nessuna taglia su questa persona. Non sprecare colpi!\``)
+        if (user.euro < 50) return m.reply(`『 💸 』 \`Un proiettile costa 50 €. Non te lo puoi permettere!\``)
 
         user.euro -= 50 // Toglie i soldi del proiettile
 
         // Calcola le probabilità
         let staNascosto = target.nascosto > Date.now()
-        let probabilità = staNascosto ? 0.05 : 0.25 // 5% se nascosto, 25% normale
-        let hit = Math.random() < probabilità
+        let probabilita = staNascosto ? 0.05 : 0.25 // 5% se nascosto, 25% normale
+        let hit = Math.random() < probabilita
 
         if (hit) {
             let vincita = target.bounty
@@ -65,15 +94,21 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
             target.bounty = 0 // Taglia azzerata
             target.nascosto = 0 
 
-            let msg = `
-💥 *BOOM! COLPO ALLA TESTA!* 💥
-@${m.sender.split('@')[0]} ha ucciso @${who.split('@')[0]}!
+            let msgHit = `
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
+· 💥 𝐇 𝐄 𝐀 𝐃 𝐒 𝐇 𝐎 𝐓 💥 ·
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 
-💰 Ha incassato la taglia di *${formatNumber(vincita)} €*!
-Banca attuale: *${formatNumber(user.euro)} €*`.trim()
-            return conn.sendMessage(m.chat, { text: msg, mentions: [m.sender, who] })
+@${m.sender.split('@')[0]} 𝐡𝐚 𝐟𝐚𝐭𝐭𝐨 𝐟𝐮𝐨𝐫𝐢 @${who.split('@')[0]}!
+
+💰 𝐈𝐧𝐜𝐚𝐬𝐬𝐨: *+${formatNumber(vincita)} €*
+🏦 𝐁𝐚𝐧𝐜𝐚 𝐀𝐭𝐭𝐮𝐚𝐥𝐞: *${formatNumber(user.euro)} €*
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
+            
+            return conn.sendMessage(m.chat, { text: msgHit, mentions: [m.sender, who] }, { quoted: fakeVerifiedQuote })
         } else {
-            return conn.sendMessage(m.chat, { text: `💨 *MANCATO!* \n@${m.sender.split('@')[0]} ha sparato a @${who.split('@')[0]} ma ha lisciato clamorosamente!\n\n💸 Hai sprecato 50 € per il proiettile. Riprova!`, mentions: [m.sender, who] })
+            let msgMiss = `💨 *𝐌 𝐀 𝐍 𝐂 𝐀 𝐓 𝐎 !*\n\n@${m.sender.split('@')[0]} ha sparato a @${who.split('@')[0]} ma ha lisciato clamorosamente!\n\n💸 _Hai sprecato 50 € per il proiettile._`
+            return conn.sendMessage(m.chat, { text: msgMiss, mentions: [m.sender, who] })
         }
     }
 
@@ -81,21 +116,30 @@ Banca attuale: *${formatNumber(user.euro)} €*`.trim()
     // COMANDO 3: .nasconditi
     // ==========================================
     if (command === 'nasconditi') {
-        if (user.bounty === 0) return m.reply(`Nessuno ti sta cercando, perché ti nascondi?`)
-        if (user.euro < 200) return m.reply(`Mazzettare le guardie per nasconderti costa 200 €! Torna quando avrai i soldi.`)
+        if (!user.bounty || user.bounty === 0) return m.reply(`『 😅 』 \`Nessuno ti sta cercando, perché ti nascondi?\``)
+        if (user.euro < 200) return m.reply(`『 💸 』 \`Pagare le guardie costa 200 €! Torna quando avrai i soldi.\``)
         
         if (user.nascosto > Date.now()) {
             let restanti = Math.ceil((user.nascosto - Date.now()) / 60000)
-            return m.reply(`Sei già nascosto! Sei al sicuro per altri ${restanti} minuti.`)
+            return m.reply(`『 🥷 』 \`Sei già nascosto! Sei al sicuro per altri ${restanti} minuti.\``)
         }
 
         user.euro -= 200
         user.nascosto = Date.now() + (10 * 60000) // Nascosto per 10 minuti
 
-        return m.reply(`🥷 Hai pagato 200 € a un trafficante. \nPer i prossimi 10 minuti le probabilità che ti colpiscano scendono dal 25% al 5%!`)
+        let msgHide = `
+🥷 *𝐌 𝐎 𝐃 𝐀 𝐋 𝐈 𝐓 𝐀'  𝐅 𝐔 𝐑 𝐓 𝐈 𝐕 𝐀*
+
+Hai pagato *200 €* a un trafficante.
+Per i prossimi *10 minuti* le probabilità che un cecchino ti colpisca crollano al *5%*!`.trim()
+
+        return conn.sendMessage(m.chat, { text: msgHide }, { quoted: fakeVerifiedQuote })
     }
 }
 
-handler.command = ['bounty', 'caccia', 'spara', 'nasconditi']
+handler.help = ['taglia', 'spara', 'nasconditi']
+handler.tags = ['giochi']
+handler.command = ['bounty', 'taglia', 'caccia', 'spara', 'nasconditi']
 handler.group = true
 export default handler
+
