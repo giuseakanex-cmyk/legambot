@@ -1,151 +1,35 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LEGAM OS - Global Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
-        
-        body {
-            font-family: 'JetBrains Mono', monospace;
-            background-color: #020205;
-            color: #e0e0e0;
-        }
+𝐋𝐄𝐆𝐀𝐌 𝐁𝐎𝐓 🕊️˚✧ BY GIUSE AKA NEX 
 
-        .glass-panel {
-            background: rgba(10, 10, 26, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(59, 13, 149, 0.3);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
-        }
+🔮 𝐏𝐀𝐍𝐎𝐑𝐀𝐌𝐈𝐂𝐀 𝐃𝐄𝐋 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 Il vertice dell'automazione su WhatsApp. Legam OS non è un semplice bot, è un'architettura complessa progettata per il controllo totale. Unico, spietato, perfetto. Basato sul motore Baileys con ottimizzazioni proprietarie per la gestione dei JID/LID e dei prefissi internazionali.
 
-        .neon-border {
-            border-left: 4px solid #3b0d95;
-            box-shadow: -5px 0 15px rgba(59, 13, 149, 0.4);
-        }
+✨ 𝐌𝐎𝐃𝐔𝐋𝐈 𝐏𝐑𝐈𝐍𝐂𝐈𝐏𝐀𝐋𝐈 • 🛡️ Legam Shield: Anti-Call e Anti-Spam avanzato con protezione automatica del database. • 👑 Owner God Mode: Comandi ad accesso privilegiato per il controllo remoto del sistema. • 📊 Core Diagnostics: Monitoraggio in tempo reale di latenza (Ping), CPU e RAM. • 🌐 Global Search: Integrazione IA con Gemini, Spotify e ricerca web multilingua. • 🎭 Interactive UI: Messaggi interattivi con estetica newsletter e targetting granulare.
 
-        .gold-text {
-            color: #d4af37;
-            text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
-        }
+📥 𝐏𝐑𝐎𝐓𝐎𝐂𝐎𝐋𝐋𝐎 𝐃𝐈 𝐈𝐍𝐒𝐓𝐀𝐋𝐋𝐀𝐙𝐈𝐎𝐍𝐄 💻 𝐒𝐄𝐑𝐕𝐄𝐑 𝐋𝐈𝐍𝐔𝐗 / 𝐕𝐏𝐒 / 𝐔𝐁𝐔𝐍𝐓𝐔 (𝐂𝐎𝐍𝐒𝐈𝐆𝐋𝐈𝐀𝐓𝐎) Il sistema è progettato per girare al massimo delle prestazioni su server dedicati. Esegui questi comandi in sequenza nel terminale:
 
-        .scanline {
-            width: 100%;
-            height: 2px;
-            background: rgba(59, 13, 149, 0.1);
-            position: fixed;
-            top: 0;
-            z-index: 100;
-            pointer-events: none;
-            animation: scan 4s linear infinite;
-        }
+Aggiornamento Sistema
 
-        @keyframes scan {
-            0% { top: -10px; }
-            100% { top: 100%; }
-        }
+sudo apt update && sudo apt upgrade -y
 
-        .stat-card:hover {
-            transform: translateY(-5px);
-            border-color: #d4af37;
-            transition: all 0.3s ease;
-        }
-    </style>
-</head>
-<body class="p-4 md:p-10">
-    <div class="scanline"></div>
+Installazione Dipendenze Globali
 
-    <!-- Header -->
-    <header class="max-w-6xl mx-auto mb-12 flex flex-col md:flex-row justify-between items-center gap-6">
-        <div>
-            <p class="text-[#3b0d95] text-xs tracking-[0.5em] mb-2">✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦</p>
-            <h1 class="text-4xl font-bold tracking-tighter text-white">𝐋𝐄𝐆𝐀𝐌 <span class="gold-text">𝐎𝐒</span></h1>
-            <p class="text-gray-500 text-sm mt-1">SISTEMA OPERATIVO GLOBALE v2.6.0</p>
-        </div>
-        <div class="glass-panel p-4 rounded-xl flex items-center gap-4 neon-border">
-            <div class="w-12 h-12 bg-[#3b0d95]/20 rounded-full flex items-center justify-center">
-                <span class="text-xl">👑</span>
-            </div>
-            <div>
-                <p class="text-[10px] text-gray-500 uppercase tracking-widest">Authorized Owner</p>
-                <p class="font-bold text-white">𝐆𝐈𝐔𝐒𝚵</p>
-            </div>
-        </div>
-    </header>
+sudo apt install -y curl git ffmpeg imagemagick build-essential
 
-    <!-- Main Content -->
-    <main class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-        
-        <!-- Status Monitor -->
-        <section class="md:col-span-2 glass-panel p-6 rounded-2xl">
-            <h2 class="text-lg font-bold mb-6 flex items-center gap-2">
-                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                SYSTEM LIVE MONITOR
-            </h2>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                <div class="stat-card bg-[#050510] p-4 rounded-xl border border-[#1a1a3a]">
-                    <p class="text-gray-500 text-[10px] uppercase">Latency</p>
-                    <p class="text-2xl font-bold gold-text">7.42 ms</p>
-                </div>
-                <div class="stat-card bg-[#050510] p-4 rounded-xl border border-[#1a1a3a]">
-                    <p class="text-gray-500 text-[10px] uppercase">Active Nodes</p>
-                    <p class="text-2xl font-bold text-white">1,240</p>
-                </div>
-                <div class="stat-card bg-[#050510] p-4 rounded-xl border border-[#1a1a3a]">
-                    <p class="text-gray-500 text-[10px] uppercase">Uptime</p>
-                    <p class="text-2xl font-bold text-white">99.9%</p>
-                </div>
-            </div>
+Configurazione Ambiente NodeJS (v20.x)
 
-            <div class="bg-black/50 p-4 rounded-lg font-mono text-sm border border-[#1a1a3a]">
-                <p class="text-green-500 mb-1">> Initializing Legam Core...</p>
-                <p class="text-green-500 mb-1">> Loading Virtual Betting Module [OK]</p>
-                <p class="text-green-500 mb-1">> Establishing Secure Link with Baileys [OK]</p>
-                <p class="text-blue-400 mb-1">> Welcome back, Giuse. All systems nominal.</p>
-                <div class="w-full h-1 bg-gray-800 mt-4 overflow-hidden rounded">
-                    <div class="w-2/3 h-full bg-[#3b0d95] animate-[shimmer_2s_infinite]"></div>
-                </div>
-            </div>
-        </section>
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - sudo apt install -y nodejs
 
-        <!-- Sidebar / Top Commands -->
-        <section class="glass-panel p-6 rounded-2xl flex flex-col gap-6">
-            <h2 class="text-lg font-bold gold-text">TOP COMMANDS</h2>
-            
-            <div class="space-y-4">
-                <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5">
-                    <span class="text-white">.virtuali</span>
-                    <span class="text-[10px] bg-[#3b0d95] px-2 py-1 rounded text-white">GAMES</span>
-                </div>
-                <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5">
-                    <span class="text-white">.ip</span>
-                    <span class="text-[10px] bg-[#3b0d95] px-2 py-1 rounded text-white">OSINT</span>
-                </div>
-                <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5">
-                    <span class="text-white">.ping</span>
-                    <span class="text-[10px] bg-[#3b0d95] px-2 py-1 rounded text-white">INFO</span>
-                </div>
-                <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5">
-                    <span class="text-white">.modlist</span>
-                    <span class="text-[10px] bg-[#3b0d95] px-2 py-1 rounded text-white">STAFF</span>
-                </div>
-            </div>
+Clonazione e Avvio
 
-            <div class="mt-auto p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-                <p class="text-xs text-yellow-500 font-bold mb-1 italic">"Luxury is in each detail."</p>
-                <p class="text-[10px] text-gray-400">— Official Legam OS Slogan</p>
-            </div>
-        </section>
+git clone https://github.com/giuseakanex-cmyk/legambot.git cd legambot mkdir -p lib plugins temp npm install --legacy-peer-deps npm start
 
-    </main>
+📱 𝐀𝐍𝐃𝐑𝐎𝐈𝐃 (𝐓𝐄𝐑𝐌𝐔𝐗) Per hostare il bot direttamente dal tuo dispositivo mobile.
 
-    <!-- Footer -->
-    <footer class="max-w-6xl mx-auto mt-20 text-center text-gray-600 text-[10px] tracking-[0.3em] uppercase">
-        Legam OSINT Systems &copy; 2026 | All Rights Reserved by Giuse
-    </footer>
+termux-setup-storage pkg update && pkg upgrade -y pkg install x11-repo tur-repo git nodejs ffmpeg imagemagick yarn -y
 
-</body>
-</html>
+cd ~ git clone https://github.com/giuseakanex-cmyk/legambot.git cd legambot mkdir -p lib plugins temp npm install --legacy-peer-deps npm start
+
+⚙️ 𝐂𝐎𝐍𝐅𝐈𝐆𝐔𝐑𝐀𝐙𝐈𝐎𝐍𝐄 𝐀𝐏𝐈𝐬 Per sbloccare il 100% del potenziale del Legam OS, modifica il file config.js inserendo le tue chiavi. ⚠️ NOTA: Il Legam Core è configurato per funzionare anche con i moduli base se alcune API mancano, ma le prestazioni ottimali si raggiungono solo con l'arsenale completo.
+
+🧩 𝐈𝐍𝐅𝐎𝐑𝐌𝐀𝐙𝐈𝐎𝐍𝐈 𝐓𝐄𝐂𝐍𝐈𝐂𝐇𝐄 • Engine: Baileys v11.6.1+ • Version: 1.0.0 (Legam Core Edition) • Supporto: Multi-Device, identificazione LID/JID nativa. • Auto-Update: Il sistema monitora le modifiche ai file e si ricarica istantaneamente.
+
+👨‍💻 𝐋'𝐀𝐑𝐂𝐇𝐈𝐓𝐄𝐓𝐓𝐎:𝐆𝐈𝐔𝐒𝐄 Fondatore e Sviluppatore Capo del Sistema Legam OS. ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ · 𝐋 𝐄 𝐆 𝐀 𝐌 𝐁 𝐎 𝐓 · ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
