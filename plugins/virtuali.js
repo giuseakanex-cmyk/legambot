@@ -1,5 +1,9 @@
-// Plugin by giuse,chiedere permesso prima di utilizzare.Database temporaneo per le partite in corso
+// Plugin by giuse, chiedere permesso prima di utilizzare.
+// Database temporaneo per le partite in corso
 global.virtualMatches = global.virtualMatches || {}
+
+// URL Immagine Ufficiale Virtuali AGGIORNATA
+const VIRTUALI_IMAGE_URL = 'https://i.ibb.co/XkXzT452/IMG-2039.jpg';
 
 // Funzione per formattare i numeri (es. 1.000.000)
 function formatNumber(num) {
@@ -84,8 +88,10 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 👑 𝐎𝐖𝐍𝐄𝐑 ➤ 𝐆𝐈𝐔𝐒𝚵
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
 
+        // Invia Immagine con testo come didascalia
         await conn.sendMessage(chatId, {
-            text: msg,
+            image: { url: VIRTUALI_IMAGE_URL },
+            caption: msg,
             contextInfo: {
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
