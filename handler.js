@@ -182,15 +182,23 @@ export async function handler(chatUpdate) {
         let isAdmin = false
         
         // ==========================================
-        // ADDIO SAM, BENVENUTO GIUSE
+        // LEGAM OS - SISTEMA GRADI
         // ==========================================
         let isGiuse = global.owner.some(([num]) => num + '@s.whatsapp.net' === normalizedSender)
         let isROwner = isGiuse || global.owner.some(([num]) => num + '@s.whatsapp.net' === normalizedSender)
-        // ==========================================
-        
         let isOwner = isROwner || m.fromMe
-        let isMods = isOwner || global.mods?.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(normalizedSender) || false
-        let isPrems = isROwner || global.prems?.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(normalizedSender) || false
+        
+        // Gradi Globali (da config.js)
+        let isGlobalMod = global.mods?.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(normalizedSender) || false
+        let isGlobalPrem = global.prems?.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(normalizedSender) || false
+
+        // 🔥 INTEGRAZIONE PRESCELTI: Controlla se l'utente è nello Staff/Premium di QUESTO gruppo
+        let isGroupMod = m.isGroup && user && user.premium === true && user.premiumGroup === m.chat
+        
+        // FUSIONE POTERI: I prescelti ottengono il grado isMods e isPrems all'interno del gruppo
+        let isMods = isOwner || isGlobalMod || isGroupMod || false
+        let isPrems = isROwner || isGlobalPrem || isGroupMod || false
+        // ==========================================
         
         if (m.isGroup) {
             if (!groupMetadata) {
@@ -268,10 +276,14 @@ export async function handler(chatUpdate) {
                     }
                 }
 
+                // ==========================================
                 // CANCELLI DI SICUREZZA
-                if (m.isGroup && chat.modoadmin && !isAdmin && !isOwner && !isROwner && !isPrems) continue;
+                // Grazie all'integrazione sopra, i "Prescelti" passeranno perché !isMods diventa falso per loro!
+                // ==========================================
+                
+                if (m.isGroup && chat.modoadmin && !isAdmin && !isOwner && !isROwner && !isMods && !isPrems) continue;
                 if (settings.soloCreatore && !isROwner && !isOwner) continue;
-                if (chat.isBanned && !isROwner && !isOwner) continue;
+                if (chat.isBanned && !isROwner && !isOwner && !isMods) continue;
 
                 if (user.banned && !isROwner && !isOwner) {
                     if (user.antispam < 2) {
@@ -286,7 +298,7 @@ export async function handler(chatUpdate) {
                     continue; 
                 }
 
-                if (m.isGroup && !isOwner && !isROwner && !isAdmin && chat.antispam) {
+                if (m.isGroup && !isOwner && !isROwner && !isAdmin && !isMods && chat.antispam) {
                     const groupData = global.groupSpam[m.chat] || (global.groupSpam[m.chat] = { count: 0, firstCommandTimestamp: 0, isSuspended: false });
                     const now = Date.now();
                     if (groupData.isSuspended) continue;
@@ -311,11 +323,6 @@ export async function handler(chatUpdate) {
                 m.plugin = name
                 m.isCommand = true
 
-                // ==========================================
-                // PONTE RETROCOMPATIBILE PER I VECCHI PLUGIN
-                // Se un plugin vecchio cerca "plugin.sam", noi controlliamo se tu sei Giuse.
-                // Aggiunto anche il supporto per i nuovi plugin che avranno "plugin.giuse".
-                // ==========================================
                 let requiresCreator = plugin.giuse || plugin.sam;
                 if (requiresCreator && !isGiuse) { fail('rowner', m, this); continue }
                 
@@ -329,7 +336,7 @@ export async function handler(chatUpdate) {
                 try {
                     await plugin.call(this, m, {
                         match, usedPrefix, noPrefix, args, command, text, conn: this, participants,
-                        isGiuse, isOwner, isMods, isAdmin, isBotAdmin, isPrems // Esportato come isGiuse
+                        isGiuse, isOwner, isMods, isAdmin, isBotAdmin, isPrems 
                     })
                     if (plugin.euro) user.euro -= plugin.euro
                 } catch (e) {
@@ -374,3 +381,5 @@ watchFile(file, async () => {
     unwatchFile(file)     
     console.log(chalk.bgHex('#3b0d95')(chalk.white.bold("File: 'handler.js' Aggiornato")))
 })
+
+
