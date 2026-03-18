@@ -28,7 +28,7 @@ let handler = async (m, { conn, usedPrefix }) => {
         // Numero finto per scena se il bot era già pulito
         let finalCount = deletedFiles > 0 ? deletedFiles : Math.floor(Math.random() * 800) + 1200;
 
-        let finalMsg = `🗑️ *Sono stati eliminati ${finalCount} archivi.Grazie per avermi svuotato le palle💦*`
+        let finalMsg = `🗑️ *Sono stati eliminati ${finalCount} archivi!Grazie per avermi svuotato le palle😉💦*`
 
         // TRUCCO QUOTE VIP: "WhatsApp Business Verificato"
         let fakeVerifiedQuote = {
