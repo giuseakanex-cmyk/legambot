@@ -3,18 +3,14 @@ import { performance } from 'perf_hooks';
 
 let handler = async (m, { conn, usedPrefix }) => {
   try {
-    // 1. Misurazione Ping (con reazione di attesa)
     const startTime = performance.now();
-    await conn.sendMessage(m.chat, { react: { text: '📡', key: m.key } });
     const endTime = performance.now();
     const latenza = (endTime - startTime).toFixed(4);
 
-    // 2. Dati di Sistema
     const uptimeMs = process.uptime() * 1000;
     const uptimeStr = clockString(uptimeMs);
     const ramBot = (process.memoryUsage().rss / 1024 / 1024).toFixed(2);
 
-    // 3. Estetica Premium Legam OS
     const textMsg = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 ·   𝐋 𝐄 𝐆 𝐀 𝐌  𝐁 𝐎 𝐓   ·
@@ -27,7 +23,6 @@ let handler = async (m, { conn, usedPrefix }) => {
 👑 𝐎𝐖𝐍𝐄𝐑 ➤ 𝐆𝐈𝐔𝐒𝚵
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim();
 
-    // 4. Invio con Bottoni e Fake Channel
     await conn.sendMessage(m.chat, {
       text: textMsg,
       footer: "✧ 𝐋 𝐄 𝐆 𝐀 𝐌  𝐎 𝐒 ✧",
@@ -48,16 +43,12 @@ let handler = async (m, { conn, usedPrefix }) => {
       }
     }, { quoted: m });
 
-    // 5. Spunta verde di successo
-    await conn.sendMessage(m.chat, { react: { text: '🏓', key: m.key } });
-
   } catch (err) {
-    console.error("Errore nell'handler ping:", err);
-    m.reply("❌ `Errore di calcolo del Ping.`");
+    console.error(err);
+    m.reply("❌ `Errore di calcolo.`");
   }
 };
 
-// Convertitore Millisecondi -> Formato Orologio
 function clockString(ms) {
   const d = Math.floor(ms / 86400000);
   const h = Math.floor(ms / 3600000) % 24;
