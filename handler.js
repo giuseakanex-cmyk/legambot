@@ -10,7 +10,7 @@ import { getAggregateVotesInPollMessage, toJid } from '@realvare/baileys'
 global.ignoredUsersGlobal = new Set()
 global.ignoredUsersGroup = {}
 global.groupSpam = {}
-global.processedWelcome = new Set() // Set per evitare i doppi messaggi di benvenuto
+global.processedWelcome = new Set() 
 
 if (!global.groupCache) global.groupCache = new NodeCache({ stdTTL: 5 * 60, useClones: false })
 if (!global.jidCache) global.jidCache = new NodeCache({ stdTTL: 600, useClones: false })
@@ -25,40 +25,6 @@ const fetchGroupMetadataWithRetry = async (conn, chatId, retries = 3, delay = 10
             if (i === retries - 1) throw e;
             await new Promise(resolve => setTimeout(resolve, delay));
         }
-    }
-}
-
-if (!global.cacheListenersSet) {
-    const conn = global.conn
-    if (conn) {
-        conn.ev.on('groups.update', async (updates) => {
-            for (const update of updates) {
-                if (!update || !update.id) continue;
-                try {
-                    const metadata = await fetchGroupMetadataWithRetry(conn, update.id)
-                    if (!metadata) continue;
-                    global.groupCache.set(update.id, metadata, { ttl: 300 })
-                } catch (e) {}
-            }
-        })
-        global.cacheListenersSet = true
-    }
-}
-
-if (!global.pollListenerSet) {
-    const conn = global.conn
-    if (conn) {
-        conn.ev.on('messages.update', async (chatUpdate) => {
-            for (const { key, update } of chatUpdate) {
-                if (update.pollUpdates) {
-                    try {
-                        const pollCreation = await global.store.getMessage(key)
-                        if (pollCreation) await getAggregateVotesInPollMessage({ message: pollCreation, pollUpdates: update.pollUpdates })
-                    } catch (e) {}
-                }
-            }
-        })
-        global.pollListenerSet = true
     }
 }
 
@@ -86,26 +52,24 @@ function initResponseHandler(conn) {
 global.processedCalls = global.processedCalls || new Map()
 
 // ==========================================
-// LEGAM OS - GESTORE EVENTI GRUPPO NATIVO (SCAVALCA I LIMITI)
+// LEGAM OS - MOTORE GRAFICO BENVENUTO
 // ==========================================
 export async function participantsUpdate({ id, participants, action }) {
     try {
-        // 🔥 ANTI DOPPIONE (Se il sistema invia due volte lo stesso evento nel giro di 10 secondi, lo ignora)
         let eventKey = `${action}_${id}_${participants.join('')}`
         if (global.processedWelcome.has(eventKey)) return;
         global.processedWelcome.add(eventKey);
         setTimeout(() => global.processedWelcome.delete(eventKey), 10000);
 
-        console.log(chalk.bgHex('#3b0d95').white.bold(' LEGAM OS ') + chalk.yellow(` 🚨 Rilevato evento: ${action} nel gruppo ${id.split('@')[0]}`));
+        console.log(chalk.bgHex('#3b0d95').white.bold(' LEGAM OS ') + chalk.yellow(` 🚨 Azione attivata: ${action} in ${id.split('@')[0]}`));
 
         if (global.opts['self']) return;
         
         let chat = global.db.data.chats[id] || {};
         let nomeDelBot = global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`;
 
-        // CONTROLLO ATTIVAZIONE DEL DATABASE (Richiede .attiva welcome)
         if (!chat.welcome && (action === 'add' || action === 'remove' || action === 'promote' || action === 'demote')) {
-            console.log(chalk.red(`[!] Funzione Welcome/Goodbye DISATTIVATA per il gruppo ${id.split('@')[0]}.`));
+            console.log(chalk.red(`[!] Welcome/Goodbye DISATTIVATO per questo gruppo.`));
             return;
         }
 
@@ -114,7 +78,7 @@ export async function participantsUpdate({ id, participants, action }) {
         let groupDesc = groupMetadata.desc ? groupMetadata.desc.toString() : 'Nessuna descrizione disponibile.';
 
         for (let user of participants) {
-            let pp = 'https://files.catbox.moe/57bmbv.jpg'; // Default Anti-Crash
+            let pp = 'https://files.catbox.moe/57bmbv.jpg'; 
             try { pp = await this.profilePictureUrl(user, 'image'); } catch (e) {}
 
             try {
@@ -122,7 +86,6 @@ export async function participantsUpdate({ id, participants, action }) {
                 let cleanUser = user.split('@')[0];
                 let text = '';
 
-                // MOTORE VARIABILI CUSTOM: @user, @group, @desc
                 if (action === 'add') {
                     let customWelcome = chat.sWelcome || `「  *BENVENUTO* 」\n𝗔𝗼 𝗮𝘁𝘁𝗲𝗻𝘁𝗼 𝗰𝗵𝗲 𝗾𝘂𝗮 𝗱𝗲𝗻𝘁𝗿𝗼 𝗳𝗮𝗻𝗻𝗼 𝗮 𝗯𝗮𝗹𝗱𝗼𝗿𝗶𝗮 𝗳𝗿𝗮𝘁è\n👤 *Utente:* @user\n🎉 *Gruppo:* @group`;
                     text = customWelcome.replace(/@user/g, `@${cleanUser}`).replace(/@group/g, groupName).replace(/@desc/g, groupDesc);
@@ -137,7 +100,6 @@ export async function participantsUpdate({ id, participants, action }) {
 
                 if (!text) continue;
 
-                // INVIO GRAFICO CON FINTA NEWSLETTER
                 await this.sendMessage(id, {
                     text: text,
                     mentions: [user],
@@ -159,27 +121,18 @@ export async function participantsUpdate({ id, participants, action }) {
                         }
                     }
                 });
-                console.log(chalk.green(`[✓] Messaggio Evento (${action}) inviato con successo!`));
+                console.log(chalk.green(`[✓] Messaggio (${action}) inviato con successo!`));
             } catch (err) {
                 console.error(chalk.red("[X] Errore invio Welcome/Goodbye:"), err);
             }
         }
     } catch (criticalError) {
-        console.error(chalk.red("[X] Errore Critico in participantsUpdate:"), criticalError);
+        console.error(chalk.red("[X] Errore Critico:"), criticalError);
     }
 }
 // ==========================================
 
 export async function handler(chatUpdate) {
-    // 🔥 FORZATURA DELL'EVENTO BENVENUTO (Nel caso il main.js sia corrotto) 🔥
-    if (!this.welcomeSensorActive) {
-        console.log(chalk.bgHex('#3b0d95').white.bold(' LEGAM OS ') + chalk.green(' Sensori Entrata/Uscita FORZATI attivati con successo.'));
-        this.ev.on('group-participants.update', async (update) => {
-            await participantsUpdate.call(this, update);
-        });
-        this.welcomeSensorActive = true;
-    }
-
     this.msgqueque = this.msgqueque || []
     this.uptime = this.uptime || Date.now()
     if (!chatUpdate) return
@@ -197,6 +150,30 @@ export async function handler(chatUpdate) {
 
     m = smsg(this, m, global.store)
     if (!m || !m.key || !m.chat || !m.sender) return
+
+    // 🔥 LEGAM OS: INTERCETTATORE DI STUB (INFALLIBILE) 🔥
+    // Questo cattura i famosi eventi 27 e 28 che hai visto nel terminale!
+    if (m.messageStubType && m.isGroup) {
+        let actionTrigger = '';
+        if (m.messageStubType === 27) actionTrigger = 'add';
+        else if (m.messageStubType === 28 || m.messageStubType === 32) actionTrigger = 'remove';
+        else if (m.messageStubType === 29) actionTrigger = 'promote';
+        else if (m.messageStubType === 30) actionTrigger = 'demote';
+
+        if (actionTrigger) {
+            let who = m.messageStubParameters[0];
+            if (who) {
+                console.log(chalk.cyan(`[!] Intercettato StubType ${m.messageStubType}. Inoltro al motore grafico...`));
+                // Passa il comando alla nostra funzione grafica
+                participantsUpdate.call(this, {
+                    id: m.chat,
+                    participants: [who],
+                    action: actionTrigger
+                });
+            }
+        }
+    }
+    // ==================================================
     
     if (m.key.participant && m.key.participant.includes(':') && m.key.participant.split(':')[1]?.includes('@')) return
 
@@ -213,7 +190,7 @@ export async function handler(chatUpdate) {
         try {
             let params = JSON.parse(m.message.interactiveResponseMessage.nativeFlowResponseMessage.paramsJson);
             if (params.id) extractedText = params.id;
-        } catch (e) { console.error("Errore lettura JSON bottone", e) }
+        } catch (e) {}
     } else if (m.message?.templateButtonReplyMessage?.selectedId) {
         extractedText = m.message.templateButtonReplyMessage.selectedId;
     } else if (m.message?.buttonsResponseMessage?.selectedButtonId) {
@@ -306,30 +283,37 @@ export async function handler(chatUpdate) {
             }
         }
 
+        // ==========================================
+        // LEGAM OS - TERMINAL LOGGER VIP
+        // ==========================================
         if (m.text || m.mtype) {
             let testoLog = m.text || `[Media: ${m.mtype}]`;
-            let tipoChat = m.isGroup ? 'Gruppo' : 'Privato';
-            let nomeUtente = m.pushName || 'Sconosciuto';
-            let numero = normalizedSender ? normalizedSender.split('@')[0] : 'Sconosciuto';
-            let orario = new Date().toLocaleTimeString('it-IT');
-            
-            let ruolo = chalk.gray('[👤 UTENTE]');
-            if (isOwner) ruolo = chalk.magenta.bold('[👑 OWNER]');
-            else if (isAdmin) ruolo = chalk.blue.bold('[🛡️ ADMIN]');
-            else if (isPrems || isMods) ruolo = chalk.yellow.bold('[💎 VIP]');
+            // Non stampare gli stub nel logger testuale per non sporcarlo
+            if (!m.messageStubType) {
+                let tipoChat = m.isGroup ? 'Gruppo' : 'Privato';
+                let nomeUtente = m.pushName || 'Sconosciuto';
+                let numero = normalizedSender ? normalizedSender.split('@')[0] : 'Sconosciuto';
+                let orario = new Date().toLocaleTimeString('it-IT');
+                
+                let ruolo = chalk.gray('[👤 UTENTE]');
+                if (isOwner) ruolo = chalk.magenta.bold('[👑 OWNER]');
+                else if (isAdmin) ruolo = chalk.blue.bold('[🛡️ ADMIN]');
+                else if (isPrems || isMods) ruolo = chalk.yellow.bold('[💎 VIP]');
 
-            let isCmd = m.text && /^[.#!\\/]/.test(m.text.trim());
-            let testoColorato = isCmd ? chalk.yellowBright.bold(testoLog) : chalk.white(testoLog);
+                let isCmd = m.text && /^[.#!\\/]/.test(m.text.trim());
+                let testoColorato = isCmd ? chalk.yellowBright.bold(testoLog) : chalk.white(testoLog);
 
-            console.log(
-                chalk.bgHex('#3b0d95').white.bold(' LEGAM OS ') + ' ' +
-                chalk.gray(`[${orario}]`) + ' ' +
-                chalk.cyan(`[${tipoChat}]`) + ' ' +
-                ruolo + ' ' +
-                chalk.green(`${nomeUtente} `) + chalk.gray(`(${numero}) > `) +
-                testoColorato
-            );
+                console.log(
+                    chalk.bgHex('#3b0d95').white.bold(' LEGAM OS ') + ' ' +
+                    chalk.gray(`[${orario}]`) + ' ' +
+                    chalk.cyan(`[${tipoChat}]`) + ' ' +
+                    ruolo + ' ' +
+                    chalk.green(`${nomeUtente} `) + chalk.gray(`(${numero}) > `) +
+                    testoColorato
+                );
+            }
         }
+        // ==========================================
 
         const ___dirname = join(path.dirname(fileURLToPath(import.meta.url)), './plugins')
         for (let name in global.plugins) {
