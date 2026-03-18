@@ -317,5 +317,3 @@ async function finalizeGame(conn, chatId, match) {
 handler.command = ['virtuali', 'punta', 'bet']
 handler.group = true
 export default handler
-
-
