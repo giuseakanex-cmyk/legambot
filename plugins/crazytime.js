@@ -4,6 +4,9 @@ global.crazyTime = global.crazyTime || {}
 // Funzione formattazione valuta
 const f = (n) => new Intl.NumberFormat('it-IT').format(n)
 
+// URL dell'Immagine Ufficiale del Crazy Time
+const MENU_IMAGE_URL = 'https://i.ibb.co/TM079xF2/IMG-2037.webp';
+
 // Configurazione Segmenti Ruota (Distribuzione reale)
 const WHEEL = [
     { name: '1', mul: 1, weight: 21 },
@@ -83,7 +86,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 }
 
 // ==========================================
-// FUNZIONE LOBBY (Richiamata ad ogni round)
+// FUNZIONE LOBBY CON IMMAGINE
 // ==========================================
 async function apriLobby(conn, chatId, usedPrefix) {
     let game = global.crazyTime[chatId]
@@ -92,7 +95,7 @@ async function apriLobby(conn, chatId, usedPrefix) {
     let tempo = game.round === 1 ? 45000 : 30000 // 45s per il primo round, 30s per i successivi
     let secondi = tempo / 1000
 
-    let lobby = `
+    let lobbyTesto = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 ·  𝐂 𝐑 𝐀 𝐙 𝐘  𝐓 𝐈 𝐌 𝐄  ·
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
@@ -111,17 +114,34 @@ Fate le vostre puntate! Il banco è aperto.
 ⏱️ 𝐂𝐡𝐢𝐮𝐬𝐮𝐫𝐚: ${secondi} Secondi
 👑 𝐎𝐖𝐍𝐄𝐑 ➤ 𝐆𝐈𝐔𝐒𝚵`.trim()
 
-    await conn.sendMessage(chatId, { 
-        text: lobby,
-        contextInfo: {
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363233544482011@newsletter',
-                newsletterName: `🎡 Legam Casino | Round ${game.round}`,
-                serverMessageId: 100
+    // Se è il PRIMO ROUND, invia l'immagine + didascalia
+    if (game.round === 1) {
+        await conn.sendMessage(chatId, { 
+            image: { url: MENU_IMAGE_URL },
+            caption: lobbyTesto,
+            contextInfo: {
+                isForwarded: true,
+                forwardedNewsletterMessageInfo: {
+                    newsletterJid: '120363233544482011@newsletter',
+                    newsletterName: `🎡 Legam Casino | Round ${game.round}`,
+                    serverMessageId: 100
+                }
             }
-        }
-    })
+        })
+    } else {
+        // Dal round 2 in poi, invia solo testo per non spammare troppe immagini
+        await conn.sendMessage(chatId, { 
+            text: lobbyTesto,
+            contextInfo: {
+                isForwarded: true,
+                forwardedNewsletterMessageInfo: {
+                    newsletterJid: '120363233544482011@newsletter',
+                    newsletterName: `🎡 Legam Casino | Round ${game.round}`,
+                    serverMessageId: 100
+                }
+            }
+        })
+    }
 
     game.timer = setTimeout(() => startSpin(conn, chatId), tempo)
 }
