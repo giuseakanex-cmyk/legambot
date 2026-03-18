@@ -13,9 +13,9 @@ let handler = async (m, { conn, usedPrefix }) => {
 
     // Costruzione Bottoni Interattivi (Stile Quick Reply)
     const buttons = [
-      { buttonId: usedPrefix + "pong", buttonText: { displayText: "🔄 Pong" }, type: 1 },
-      { buttonId: usedPrefix + "ping", buttonText: { displayText: "⚡ Ping" }, type: 1 },
-      { buttonId: usedPrefix + "ds", buttonText: { displayText: "🗑️ Svuota sessioni" }, type: 1 }
+      { buttonId: usedPrefix + "pong", buttonText: { displayText: "🔄 𝐏𝐨𝐧𝐠" }, type: 1 },
+      { buttonId: usedPrefix + "ping", buttonText: { displayText: "🏓 𝐏𝐢𝐧𝐠" }, type: 1 },
+      { buttonId: usedPrefix + "ds", buttonText: { displayText: "🗑️ 𝐝𝐬" }, type: 1 }
     ];
 
     // Invio del messaggio minimale identico allo screen
