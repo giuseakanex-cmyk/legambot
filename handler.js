@@ -120,9 +120,7 @@ export async function handler(chatUpdate) {
     }
     if (!m.key.remoteJid) return
     
-    // =======================================================
-    // 🔥 FIX BOTTONI: Lettura infallibile dei bottoni e Native Flow
-    // =======================================================
+    // FIX BOTTONI
     let extractedText = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
     
     if (m.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson) {
@@ -141,7 +139,6 @@ export async function handler(chatUpdate) {
     if (extractedText) {
         m.text = extractedText;
     }
-    // =======================================================
 
     initResponseHandler(this)
 
@@ -183,8 +180,14 @@ export async function handler(chatUpdate) {
         let normalizedParticipants = null
         let isBotAdmin = false
         let isAdmin = false
-        let isSam = global.owner.some(([num]) => num + '@s.whatsapp.net' === normalizedSender)
-        let isROwner = isSam || global.owner.some(([num]) => num + '@s.whatsapp.net' === normalizedSender)
+        
+        // ==========================================
+        // ADDIO SAM, BENVENUTO GIUSE
+        // ==========================================
+        let isGiuse = global.owner.some(([num]) => num + '@s.whatsapp.net' === normalizedSender)
+        let isROwner = isGiuse || global.owner.some(([num]) => num + '@s.whatsapp.net' === normalizedSender)
+        // ==========================================
+        
         let isOwner = isROwner || m.fromMe
         let isMods = isOwner || global.mods?.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(normalizedSender) || false
         let isPrems = isROwner || global.prems?.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(normalizedSender) || false
@@ -265,22 +268,11 @@ export async function handler(chatUpdate) {
                     }
                 }
 
-                // =======================================================
-                // 🔥 IL CANCELLO: CONTROLLI GLOBALI RIPRISTINATI
-                // =======================================================
-                
-                // 1. MODO ADMIN
-                if (m.isGroup && chat.modoadmin && !isAdmin && !isOwner && !isROwner && !isPrems) {
-                    continue; // Ignora silenziosamente l'utente
-                }
-
-                // 2. SOLO CREATORE
+                // CANCELLI DI SICUREZZA
+                if (m.isGroup && chat.modoadmin && !isAdmin && !isOwner && !isROwner && !isPrems) continue;
                 if (settings.soloCreatore && !isROwner && !isOwner) continue;
-
-                // 3. CHAT BANNATA
                 if (chat.isBanned && !isROwner && !isOwner) continue;
 
-                // 4. UTENTE BANNATO
                 if (user.banned && !isROwner && !isOwner) {
                     if (user.antispam < 2) {
                         await this.sendMessage(m.chat, { text: `🚫 *Sei stato bannato dall'utilizzo del Legam OS.*` }, { quoted: m });
@@ -289,13 +281,11 @@ export async function handler(chatUpdate) {
                     continue;
                 }
 
-                // 5. UTENTE MUTATO
                 if (user.muto && !isROwner && !isOwner) {
                     await this.sendMessage(m.chat, { text: `🚫 Non puoi usare i comandi se sei stato mutato!` }, { quoted: m });
-                    continue; // Cambiato da "return" a "continue" per chiudere elegantemente l'azione
+                    continue; 
                 }
 
-                // 6. ANTI SPAM
                 if (m.isGroup && !isOwner && !isROwner && !isAdmin && chat.antispam) {
                     const groupData = global.groupSpam[m.chat] || (global.groupSpam[m.chat] = { count: 0, firstCommandTimestamp: 0, isSuspended: false });
                     const now = Date.now();
@@ -315,14 +305,20 @@ export async function handler(chatUpdate) {
                         continue;
                     }
                 }
-                // =======================================================
 
                 if (plugin.disabled && !isOwner) { fail('disabled', m, this); continue }
 
                 m.plugin = name
                 m.isCommand = true
 
-                if (plugin.sam && !isSam) { fail('sam', m, this); continue }
+                // ==========================================
+                // PONTE RETROCOMPATIBILE PER I VECCHI PLUGIN
+                // Se un plugin vecchio cerca "plugin.sam", noi controlliamo se tu sei Giuse.
+                // Aggiunto anche il supporto per i nuovi plugin che avranno "plugin.giuse".
+                // ==========================================
+                let requiresCreator = plugin.giuse || plugin.sam;
+                if (requiresCreator && !isGiuse) { fail('rowner', m, this); continue }
+                
                 if (plugin.owner && !isOwner) { fail('owner', m, this); continue }
                 if (plugin.mods && !isMods) { fail('mods', m, this); continue } 
                 if (plugin.premium && !isPrems) { fail('premium', m, this); continue } 
@@ -333,7 +329,7 @@ export async function handler(chatUpdate) {
                 try {
                     await plugin.call(this, m, {
                         match, usedPrefix, noPrefix, args, command, text, conn: this, participants,
-                        isSam, isOwner, isMods, isAdmin, isBotAdmin, isPrems
+                        isGiuse, isOwner, isMods, isAdmin, isBotAdmin, isPrems // Esportato come isGiuse
                     })
                     if (plugin.euro) user.euro -= plugin.euro
                 } catch (e) {
@@ -378,5 +374,3 @@ watchFile(file, async () => {
     unwatchFile(file)     
     console.log(chalk.bgHex('#3b0d95')(chalk.white.bold("File: 'handler.js' Aggiornato")))
 })
-
-
