@@ -28,7 +28,8 @@ let handler = async (m, { conn, usedPrefix }) => {
         // Numero finto per scena se il bot era già pulito
         let finalCount = deletedFiles > 0 ? deletedFiles : Math.floor(Math.random() * 800) + 1200;
 
-        let finalMsg = `🗑️ *Sono stati eliminati ${finalCount} archivi! Grazie per avermi svuotato le palle😉💦*`
+        // 🔥 IL TESTO RICHIESTO CON IL FONT VIP (Sans-Serif Bold Unicode) 🔥
+        let finalMsg = `🗑️ *𝗦𝗼𝗻𝗼 𝘀𝘁𝗮𝘁𝗶 𝗲𝗹𝗶𝗺𝗶𝗻𝗮𝘁𝗶 ${finalCount} 𝗮𝗿𝗰𝗵𝗶𝘃𝗶! 𝗚𝗿𝗮𝘇𝗶𝗲 𝗽𝗲𝗿 𝗮𝘃𝗲𝗿𝗺𝗶 𝘀𝘃𝘂𝗼𝘁𝗮𝘁𝗼 𝗹𝗲 𝗽𝗮𝗹𝗹𝗲 😉💦*`
 
         // TRUCCO QUOTE VIP: "WhatsApp Business Verificato"
         let fakeVerifiedQuote = {
@@ -45,15 +46,15 @@ let handler = async (m, { conn, usedPrefix }) => {
             }
         }
 
-        // Bottoni Interattivi
+        // 🔘 BOTTONI CON IL FONT VIP
         const buttons = [
-            { buttonId: usedPrefix + "ds", buttonText: { displayText: "🔄 Svuota sessioni" }, type: 1 },
-            { buttonId: usedPrefix + "ping", buttonText: { displayText: "⚡ Ping" }, type: 1 },
-            { buttonId: usedPrefix + "pong", buttonText: { displayText: "🏓 Pong" }, type: 1 },
-            { buttonId: usedPrefix + "speed", buttonText: { displayText: "📊 Speed" }, type: 1 }
+            { buttonId: usedPrefix + "ds", buttonText: { displayText: "🔄 𝗦𝘃𝘂𝗼𝘁𝗮 𝗦𝗲𝘀𝘀𝗶𝗼𝗻𝗶" }, type: 1 },
+            { buttonId: usedPrefix + "ping", buttonText: { displayText: "⚡ 𝗣𝗶𝗻𝗴" }, type: 1 },
+            { buttonId: usedPrefix + "pong", buttonText: { displayText: "🏓 𝗣𝗼𝗻𝗴" }, type: 1 },
+            { buttonId: usedPrefix + "speed", buttonText: { displayText: "📊 𝗦𝗽𝗲𝗲𝗱" }, type: 1 }
         ]
 
-        // Invio immediato (Niente animazioni, niente react)
+        // Invio immediato (Niente animazioni, niente react per non far crashare i bottoni)
         await conn.sendMessage(m.chat, {
             text: finalMsg,
             buttons: buttons,
