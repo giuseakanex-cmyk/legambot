@@ -4,7 +4,6 @@ let handler = async (m, { conn, usedPrefix }) => {
   try {
     // Calcolo Ping tramite ping-pong col server WhatsApp
     const startTime = performance.now();
-    await conn.sendMessage(m.chat, { react: { text: '🏓', key: m.key } }); 
     const endTime = performance.now();
     const latenza = (endTime - startTime).toFixed(2);
 
