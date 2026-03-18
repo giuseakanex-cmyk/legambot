@@ -1,8 +1,8 @@
 // Plugin by giuse, chiedere permesso prima di utilizzare.
 global.virtualMatches = global.virtualMatches || {}
 
-// URL Immagine Stabile (Football Stadium HD) - Non va in down
-const VIRTUALI_IMAGE_URL = 'https://cdn.pixabay.com/photo/2016/11/29/03/53/architecture-1867187_1280.jpg';
+// URL Immagine Ufficiale Better (Catbox.moe)
+const VIRTUALI_IMAGE_URL = 'https://files.catbox.moe/3x3xun.jpeg';
 
 function formatNumber(num) {
     return new Intl.NumberFormat('it-IT').format(num)
@@ -121,7 +121,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                 }
             })
         } catch (imgError) {
-            console.log("[LEGAM OS] Server Immagini in Down. Invio solo testo.");
+            console.log("[LEGAM OS] Immagine non valida o server giù. Anti-crash attivo.");
             await conn.sendMessage(chatId, {
                 text: msg,
                 contextInfo: {
@@ -239,7 +239,7 @@ async function avviaPartita(conn, chatId) {
             await conn.sendMessage(chatId, { text: msg })
         }
         else if (actionType < 0.80) {
-            msg = `😱 𝐌𝐈𝐑𝐀𝐂𝐎𝐋𝐎 𝐃𝐄𝐋 𝐏𝐎𝐓𝐈𝐄𝐑𝐄!\n*${player}* calcia a botta sicura, ma l'estremo difensore del ${defendingTeam} fa una parata pazzesca!`
+            msg = `😱 𝐌𝐈𝐑𝐀𝐂𝐎𝐋𝐎 𝐃𝐄𝐋 𝐏𝐎𝐑𝐓𝐈𝐄𝐑𝐄!\n*${player}* calcia a botta sicura, ma l'estremo difensore del ${defendingTeam} fa una parata pazzesca!`
             await conn.sendMessage(chatId, { text: `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n${msg}` })
         } else {
             let defPlayer = getPlayer(defendingTeam)
@@ -308,7 +308,7 @@ async function finalizeGame(conn, chatId, match) {
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
                 newsletterJid: '120363233544482011@newsletter',
-                newsletterName: "⚽ 𝐋𝐞𝐠𝐚𝐦 𝐎𝐒 𝐑𝐞𝐬𝐮𝐥𝐭s",
+                newsletterName: "⚽ 𝐋𝐞𝐠𝐚𝐦 𝐎𝐒 𝐑𝐞𝐬𝐮𝐥𝐭𝐬",
                 serverMessageId: 100
             }
         }
@@ -320,4 +320,5 @@ async function finalizeGame(conn, chatId, match) {
 handler.command = ['virtuali', 'punta', 'bet']
 handler.group = true
 export default handler
+
 
