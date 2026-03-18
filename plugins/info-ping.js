@@ -24,14 +24,19 @@ let handler = async (m, { conn, usedPrefix }) => {
 · 𝐔𝐩𝐭𝐢𝐦𝐞 ➻ ${uptimeStr}
 · 𝐑𝐀𝐌 ➻ ${ramBot} MB
 
-👑 𝐎𝐖𝐍𝐄𝐑
-➤ 𝐆𝐈𝐔𝐒𝚵
-
+👑 𝐎𝐖𝐍𝐄𝐑 ➤ 𝐆𝐈𝐔𝐒𝚵
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim();
 
-    // 4. Invio Sicuro con Fake Channel (Anti-Ban e Anti-Crash)
+    // 4. Invio con Bottoni e Fake Channel
     await conn.sendMessage(m.chat, {
       text: textMsg,
+      footer: "✧ 𝐋 𝐄 𝐆 𝐀 𝐌  𝐎 𝐒 ✧",
+      buttons: [
+        { buttonId: usedPrefix + "ping", buttonText: { displayText: "📡 Rifai Ping" }, type: 1 },
+        { buttonId: usedPrefix + "menu", buttonText: { displayText: "✧ Menu Generale" }, type: 1 },
+        { buttonId: usedPrefix + "ds", buttonText: { displayText: "🗑️ Svuota Cache" }, type: 1 }
+      ],
+      headerType: 1,
       contextInfo: {
         mentionedJid: [m.sender],
         isForwarded: true,
@@ -66,4 +71,5 @@ handler.tags = ['info'];
 handler.command = /^(ping|p)$/i;
 
 export default handler;
+
 
