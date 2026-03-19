@@ -27,7 +27,7 @@ export async function before(m, { conn, groupMetadata }) {
 
   const type = m.messageStubType;
   let ppBuffer;
-  const vareb0t = 'https://i.ibb.co/hJW7WwxV/varebot.jpg';
+  const giusebot = 'https://i.ibb.co/gMDMVjJn/IMG-1824.png';
 
   try {
     const ppUrl = await conn.profilePictureUrl(m.chat, 'image');
@@ -60,7 +60,7 @@ export async function before(m, { conn, groupMetadata }) {
     30: `ㅤㅤ⋆｡˚『 ╭ \`ADMIN RETROCESSO\` ╯ 』˚｡⋆\n╭  \n│ 『 👤 』 \`A:\` *${formattedParam0}*\n│ 『 🛠️ 』 \`Da:\` *${utente}*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`
   };
 
-  if (global.db.data.chats[m.chat].rileva && varebot[type]) {
+  if (global.db.data.chats[m.chat].rileva && giusebot[type]) {
     const azione = am[type] || 'EVENTO GRUPPO';
     const contextInfo = {
       ...global.fake.contextInfo || {},
@@ -82,7 +82,7 @@ export async function before(m, { conn, groupMetadata }) {
     contextInfo.mentionedJid = mentions;
 
     await conn.sendMessage(m.chat, {
-      text: varebot[type],
+      text: giusebot[type],
       contextInfo
     });
   }
