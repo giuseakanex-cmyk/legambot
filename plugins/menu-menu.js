@@ -26,7 +26,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
 *│ ➤* 🛡️ ${_p}menumod
 *│ ➤* 🪩 ${_p}menuspeciale
 
-
+*│ ➤* 🚨 ${_p}menusicurezza
 *│ ➤* ☢️ .contronuke
 
 ╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
