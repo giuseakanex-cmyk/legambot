@@ -10,23 +10,12 @@ function formatTimeLeft(timestamp) {
     return `${minutes} min`
 }
 
-async function getUserProfilePic(conn, userId) {
-    try {
-        const pp = await conn.profilePictureUrl(userId, 'image')
-        return pp
-    } catch {
-        return 'https://i.ibb.co/BKHtdBNp/default-avatar-profile-icon-1280x1280.jpg'
-    }
-}
-
 function normalizeId(id) {
     if (!id) return '';
-    
     let normalizedId = id.replace('@s.whatsapp.net', '').replace('@lid', '').split('@')[0]
     if (normalizedId.startsWith('39')) {
         normalizedId = normalizedId.substring(2)
     }
-    
     return normalizedId
 }
 
@@ -37,54 +26,60 @@ global.gpMutaSmuta.normalizeId = normalizeId
 function getUserName(userId, participants) {
     const normalizedUserId = normalizeId(userId)
     let participant = participants.find(p => normalizeId(p.id) === normalizedUserId)
+    if (!participant) participant = participants.find(p => p.jid && normalizeId(p.jid) === normalizedUserId)
     if (!participant) {
-        participant = participants.find(p => p.jid && normalizeId(p.jid) === normalizedUserId)
-    }
-    if (!participant) {
-        const alternativeId = normalizedUserId.startsWith('39') ?
-            normalizedUserId.substring(2) :
-            '39' + normalizedUserId
+        const alternativeId = normalizedUserId.startsWith('39') ? normalizedUserId.substring(2) : '39' + normalizedUserId
         participant = participants.find(p => normalizeId(p.id) === alternativeId)
-        if (!participant) {
-            participant = participants.find(p => p.jid && normalizeId(p.jid) === alternativeId)
-        }
+        if (!participant) participant = participants.find(p => p.jid && normalizeId(p.jid) === alternativeId)
     }
     return participant?.notify || participant?.name || normalizedUserId
 }
 
-let handler = async (m, { conn, command, args, participants }) => {
+// 🔥 Helper per creare l'estetica VIP infallibile
+const legamContext = (title, mentions = []) => ({
+    mentionedJid: mentions,
+    isForwarded: true,
+    forwardingScore: 999,
+    forwardedNewsletterMessageInfo: {
+        newsletterJid: '120363233544482011@newsletter',
+        serverMessageId: 100,
+        newsletterName: `🛡️ ${title}`
+    }
+});
+
+let handler = async (m, { conn, command, args, participants, usedPrefix }) => {
     const isMute = command === 'muta'
     const isUnmute = command === 'smuta'
     const isList = command === 'listamutati'
 
+    // ==========================================
+    // COMANDO: LISTAMUTATI
+    // ==========================================
     if (isList) {
         if (!mutedUsers.size) {
-            return m.reply(`ㅤㅤ⋆｡˚『 ╭ \`LISTA MUTATI\` ╯ 』˚｡⋆\n╭\n│ 『 📭 』 \`stato:\` *Nessun utente mutato*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`)
+            let msg = `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 📭 𝐋𝐈𝐒𝐓𝐀 𝐌𝐔𝐓𝐀𝐓𝐈 📭 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 🛡️ 』 _Nessun utente è attualmente mutato._\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`;
+            return conn.sendMessage(m.chat, { text: msg, contextInfo: legamContext('Lista Pulita') }, { quoted: m });
         }
         
-        let text = `ㅤㅤ⋆｡˚『 ╭ \`LISTA MUTATI\` ╯ 』˚｡⋆\n╭\n`
+        let text = `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 📭 𝐋𝐈𝐒𝐓𝐀 𝐌𝐔𝐓𝐀𝐓𝐈 📭 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n`
         let mentions = []
         for (let [normalized, data] of mutedUsers.entries()) {
             let timeLeft = formatTimeLeft(data.timestamp)
-            // Try to get current name, fallback to stored displayNumber
-            let userJid = data.displayNumber.startsWith('39') && data.displayNumber.length === 12 ?
-                data.displayNumber + '@s.whatsapp.net' :
-                data.displayNumber + '@lid'
+            let userJid = data.displayNumber.startsWith('39') && data.displayNumber.length === 12 ? data.displayNumber + '@s.whatsapp.net' : data.displayNumber + '@lid'
             let currentName = getUserName(userJid, participants) || data.displayNumber
-            text += `│ 『 🔇 』 @${currentName} - ${timeLeft}\n`
-            text += `│ 『 📝 』 \`motivo:\` *${data.reason}*\n`
+            
+            text += `│ 🔇 @${currentName}\n`
+            text += `│ ⏱️ 𝐒𝐜𝐚𝐝𝐞𝐧𝐳𝐚: ${timeLeft}\n`
+            text += `│ 📝 𝐌𝐨𝐭𝐢𝐯𝐨: _${data.reason}_\n`
+            text += `╰───────────────⬣\n`
             mentions.push(userJid)
         }
-        text += `*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`
-        return conn.sendMessage(m.chat, { 
-            text, 
-            mentions,
-            contextInfo: { ...global.fake.contextInfo }
-        })
+        text += `\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`
+        return conn.sendMessage(m.chat, { text, contextInfo: legamContext('Registro Punizioni', mentions) }, { quoted: m });
     }
 
+    // Identificazione del bersaglio
     let users = []
-
     if (m.mentionedJid?.length) {
         users = m.mentionedJid
         args = args.filter(arg => !arg.startsWith('@'))
@@ -93,7 +88,8 @@ let handler = async (m, { conn, command, args, participants }) => {
     }
 
     if (!users.length) {
-        return m.reply(`ㅤㅤ⋆｡˚『 ╭ \`USO COMANDO\` ╯ 』˚｡⋆\n╭\n│ 『 ❌』 \`formato:\` *${command} @user [minuti] [motivo]*\n│ 『 💡 』 \`oppure:\` *rispondi a un messaggio*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`)
+        let msg = `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· ⚠️ 𝐄𝐑𝐑𝐎𝐑𝐄 ⚠️ ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 ❌ 』 𝐅𝐨𝐫𝐦𝐚𝐭𝐨: *${usedPrefix}${command} @user [minuti] [motivo]*\n『 💡 』 𝐎𝐩𝐩𝐮𝐫𝐞: _Rispondi a un suo messaggio_\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`;
+        return conn.sendMessage(m.chat, { text: msg, contextInfo: legamContext('Errore Sintassi') }, { quoted: m });
     }
 
     const validUsers = []
@@ -102,49 +98,30 @@ let handler = async (m, { conn, command, args, participants }) => {
         const decodedId = conn.decodeJid(user)
         const normalizedUserId = normalizeId(decodedId)
         let isValid = false
-        let matchedParticipant = null
-        matchedParticipant = participants.find(p => normalizeId(p.id) === normalizedUserId)
-        if (matchedParticipant) {
-            isValid = true
-        } else {
-            matchedParticipant = participants.find(p => p.jid && normalizeId(p.jid) === normalizedUserId)
-            if (matchedParticipant) {
-                isValid = true
-            } else {
-                const alternativeId = normalizedUserId.startsWith('39') ?
-                    normalizedUserId.substring(2) :
-                    '39' + normalizedUserId
-
-                matchedParticipant = participants.find(p => normalizeId(p.id) === alternativeId)
-                if (matchedParticipant) {
-                    isValid = true
-                } else {
-                    matchedParticipant = participants.find(p => p.jid && normalizeId(p.jid) === alternativeId)
-                    if (matchedParticipant) {
-                        isValid = true
-                    }
-                }
-            }
+        let matchedParticipant = participants.find(p => normalizeId(p.id) === normalizedUserId)
+        
+        if (!matchedParticipant) matchedParticipant = participants.find(p => p.jid && normalizeId(p.jid) === normalizedUserId)
+        if (!matchedParticipant) {
+            const alternativeId = normalizedUserId.startsWith('39') ? normalizedUserId.substring(2) : '39' + normalizedUserId
+            matchedParticipant = participants.find(p => normalizeId(p.id) === alternativeId)
+            if (!matchedParticipant) matchedParticipant = participants.find(p => p.jid && normalizeId(p.jid) === alternativeId)
         }
-
         if (!isValid && m.quoted && decodedId === conn.decodeJid(m.quoted.sender)) {
             isValid = true
             matchedParticipant = participants.find(p => p.jid && conn.decodeJid(p.jid) === decodedId)
         }
-
-        if (isValid) {
+        if (matchedParticipant || isValid) {
             validUsers.push(decodedId)
             userParticipantMap.set(decodedId, matchedParticipant)
         }
     }
     users = validUsers
 
-    if (!users.length) {
-        return m.reply(`ㅤㅤ⋆｡˚『 ╭ \`ERRORE\` ╯ 』˚｡⋆\n╭\n│ 『 ❌ 』 \`stato:\` *Utente non valido o non nel gruppo*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`)
-    }
+    if (!users.length) return m.reply(`『 ❌ 』 \`Utente non valido o non presente nel gruppo.\``);
     
+    // Calcolo Tempo e Motivo
     let time = 0
-    let reason = 'motivo non specificato ma meritato'
+    let reason = 'Violazione delle regole del gruppo'
 
     if (args.length) {
         let timeArg = args[0].toLowerCase()
@@ -153,12 +130,7 @@ let handler = async (m, { conn, command, args, participants }) => {
         if (timeMatch) {
             let value = parseInt(timeMatch[1])
             let unit = timeMatch[2] || 'm'
-
-            if (unit.startsWith('s')) {
-                time = value * 1000
-            } else {
-                time = value * 60000
-            }
+            time = unit.startsWith('s') ? value * 1000 : value * 60000
             reason = args.slice(1).join(' ') || reason
         } else {
             reason = args.join(' ')
@@ -180,240 +152,139 @@ let handler = async (m, { conn, command, args, participants }) => {
             const normalizedPunish = normalizeId(conn.decodeJid(m.sender))
             mutedUsers.set(normalizedPunish, {
                 timestamp: Date.now() + (2 * 60000),
-                reason: 'Hai provato a mutare un owner 👀',
+                reason: 'Hai osato provare a mutare il Creatore.',
                 lastNotification: 0,
                 displayNumber: conn.decodeJid(m.sender).split('@')[0]
             })
-            return m.reply(`ㅤㅤ⋆｡˚『 ╭ \`PUNIZIONE\` ╯ 』˚｡⋆\n╭\n│ 『 👊 』 \`errore:\` *Non puoi mutare un owner*\n│ 『 🔇 』 \`punizione:\` *Sei mutato per 2 minuti*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`)
+            let punMsg = `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· ⚡ 𝐏𝐔𝐍𝐈𝐙𝐈𝐎𝐍𝐄 ⚡ ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 👑 』 𝐄𝐫𝐫𝐨𝐫𝐞: _Non puoi mutare un Owner._\n『 🔇 』 𝐂𝐨𝐧𝐬𝐞𝐠𝐮𝐞𝐧𝐳𝐚: *Sei mutato tu per 2 minuti!*\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`;
+            return conn.sendMessage(m.chat, { text: punMsg, contextInfo: legamContext('Punizione Divina', [m.sender]) }, { quoted: m });
         }
 
-        if (isOwner && isUnmute) {
-            return m.reply(`ㅤㅤ⋆｡˚『 ╭ \`ERRORE\` ╯ 』˚｡⋆\n╭\n│ 『 ❌ 』 \`stato:\` *Un owner non può essere mutato*\n│ 『 💡 』 \`info:\` *Operazione non necessaria*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`)
-        }
-
-        if (jid === conn.user.jid) {
-            return m.reply(`ㅤㅤ⋆｡˚『 ╭ \`ERRORE\` ╯ 』˚｡⋆\n╭\n│ 『 ❌ 』 \`azione:\` *Non puoi ${command}re il bot*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`)
-        }
+        if (isOwner && isUnmute) return m.reply(`『 💡 』 \`Un Owner non può mai essere mutato.\``);
+        if (jid === conn.user.jid) return m.reply(`『 🤖 』 \`Non posso mutare me stesso!\``);
 
         if (isMute) {
-            const muteData = {
-                timestamp: time ? Date.now() + time : 0,
-                reason,
-                lastNotification: 0,
-                displayNumber
-            };
-            
-            mutedUsers.set(normalized, muteData);
+            mutedUsers.set(normalized, { timestamp: time ? Date.now() + time : 0, reason, lastNotification: 0, displayNumber });
             results.push(`@${displayNumber}`);
-            
         } else if (isUnmute) {
-            const normalizedTargetId = normalizeId(preferredJid);
-            let found = mutedUsers.delete(normalizedTargetId);
-            
-            if (found) {
-                results.push(`@${displayNumber}`);
-            } else if (users.length === 1) {
-                return m.reply(`ㅤㅤ⋆｡˚『 ╭ \`INFO\` ╯ 』˚｡⋆\n╭\n│ 『 💡 』 \`stato:\` *@${displayNumber} non è mutato*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`);
-            }
+            let found = mutedUsers.delete(normalized);
+            if (found) results.push(`@${displayNumber}`);
+            else if (users.length === 1) return m.reply(`『 💡 』 \`L'utente @${displayNumber} non era mutato.\``, null, { mentions: [preferredJid] });
         }
     }
 
-    const targetUser = users[0]
-    const userName = getUserName(targetUser, participants)
-    const userPp = await getUserProfilePic(conn, targetUser)
+    // ==========================================
+    // MESSAGGIO DI SUCCESSO MUTA/SMUTA
+    // ==========================================
+    let titleMute = isMute ? '🔇 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐌𝐔𝐓𝐄 🔇' : '🔊 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐒𝐌𝐔𝐓𝐄 🔊';
+    let msg = `
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
+· ${titleMute} ·
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 
-    let msg = `ㅤㅤ⋆｡˚『 ╭ \`AZIONE COMPLETATA\` ╯ 』˚｡⋆\n╭\n`
-    msg += `│ 『 👤 』 \`utenti:\` *${results.join(', ')}*\n`
-    msg += `│ 『 ⚡ 』 \`azione:\` *${isMute ? 'mutato' : 'smutato'}*\n`
-    if (isMute) {
-        msg += time ? `│ 『 ⏱️ 』 \`durata:\` *${time / 60000} minuti*\n` : `│ 『 ⏱️ 』 \`durata:\` *∞ Permanente*\n`
-    }
-    msg += `│ 『 📝 』 \`motivo:\` *${reason}*\n`
-    msg += `*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`
+『 👤 』 𝐔𝐭𝐞𝐧𝐭𝐞: ${results.join(', ')}
+『 ⚡ 』 𝐀𝐳𝐢𝐨𝐧𝐞: *${isMute ? 'Mutato' : 'Smutato'}*
+${isMute ? `『 ⏱️ 』 𝐃𝐮𝐫𝐚𝐭𝐚: *${time ? time / 60000 + ' minuti' : '∞ Permanente'}*\n` : ''}『 📝 』 𝐌𝐨𝐭𝐢𝐯𝐨: _${reason}_
+
+👑 _Azione eseguita dall'Amministrazione._
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim();
 
     await conn.sendMessage(m.chat, {
         text: msg,
-        mentions: users,
-        contextInfo: {
-            ...global.fake.contextInfo,
-            externalAdReply: {
-                ...global.fake.contextInfo,
-                title: `${userName} - ${isMute ? 'Mutato' : 'Smutato'}`,
-                body: `${targetUser.split('@')[0]} - ${isMute ? (time ? `mutato per ${time / 60000} min` : 'mutato permanentemente') : 'smutato'}`,
-                thumbnailUrl: userPp,
-                mediaType: 1,
-                renderLargerThumbnail: false
-            }
-        }
-    })
+        contextInfo: legamContext(`Legam OS Security`, users)
+    }, { quoted: m });
 }
 
+// ==========================================
+// INTERCETTATORE ATTIVO (CANCELLA MESSAGGI E KICKA)
+// ==========================================
 handler.before = async (m, { conn, isCommand }) => {
     if (!m.sender || m.sender === conn.user.jid) return
 
     const senderJid = conn.decodeJid(m.sender)
-
     let normalizedSender = normalizeId(senderJid)
 
     if (senderJid.endsWith('@lid')) {
-        const gm = await conn.groupMetadata(m.chat)
-        const participant = gm.participants.find(p => conn.decodeJid(p.id) === senderJid)
-        if (participant && participant.jid) {
-            normalizedSender = normalizeId(conn.decodeJid(participant.jid))
+        const gm = await conn.groupMetadata(m.chat).catch(()=>null)
+        if(gm){
+            const participant = gm.participants.find(p => conn.decodeJid(p.id) === senderJid)
+            if (participant && participant.jid) normalizedSender = normalizeId(conn.decodeJid(participant.jid))
         }
     }
     
     const isMuted = mutedUsers.has(normalizedSender)
-    
     if (!isMuted) return
-    
     if (isCommand && m.isAdmin) return true
 
     const data = mutedUsers.get(normalizedSender)
     
+    // Auto-Smute se il tempo è scaduto
     if (data.timestamp && Date.now() > data.timestamp) {
         mutedUsers.delete(normalizedSender)
-        const userName = getUserName(m.sender, await conn.groupMetadata(m.chat).then(gm => gm.participants))
-        const userPp = await getUserProfilePic(conn, m.sender)
-        
-        await conn.sendMessage(m.chat, {
-            text: `ㅤㅤ⋆｡˚『 ╭ \`MUTE SCADUTO\` ╯ 』˚｡⋆\n╭\n│ 『 ✅ 』 \`utente:\` *@${m.sender.split('@')[0]}*\n│ 『 🔓 』 \`stato:\` *smutato automaticamente*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`,
-            mentions: [m.sender],
-            contextInfo: {
-                ...global.fake.contextInfo,
-                externalAdReply: {
-                    title: userName,
-                    body: 'Mute scaduto - Utente libero',
-                    thumbnailUrl: userPp,
-                    mediaType: 1,
-                    renderLargerThumbnail: false
-                }
-            }
-        })
+        let unMsg = `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 🔓 𝐌𝐔𝐓𝐄 𝐒𝐂𝐀𝐃𝐔𝐓𝐎 🔓 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 ✅ 』 𝐔𝐭𝐞𝐧𝐭𝐞: @${m.sender.split('@')[0]}\n『 🔊 』 𝐒𝐭𝐚𝐭𝐨: _Smutato automaticamente. Ora puoi parlare._\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`;
+        await conn.sendMessage(m.chat, { text: unMsg, contextInfo: legamContext('Mute Scaduto', [m.sender]) })
         return
     }
 
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    try {
-        await conn.sendMessage(m.chat, { delete: m.key })
-    } catch (e) {
-        console.error('Errore cancellazione messaggio mutato:', e)
-    }
+    // Cancella il messaggio del mutato
+    await new Promise(resolve => setTimeout(resolve, 500))
+    try { await conn.sendMessage(m.chat, { delete: m.key }) } catch (e) {}
 
     const now = Date.now()
     const userWarnings = spamWarnings.get(m.sender) || { count: 0, lastMessage: 0, warned: false }
     
-    if (now - userWarnings.lastMessage < 2000) {
-        userWarnings.count++
-    } else {
-        userWarnings.count = 1
-    }
+    if (now - userWarnings.lastMessage < 2000) userWarnings.count++
+    else userWarnings.count = 1
     
     userWarnings.lastMessage = now
     spamWarnings.set(m.sender, userWarnings)
     
+    // Avviso dopo 3 messaggi
     if (userWarnings.count >= 3 && !userWarnings.warned) {
-        const userName = getUserName(m.sender, await conn.groupMetadata(m.chat).then(gm => gm.participants))
-        const userPp = await getUserProfilePic(conn, m.sender)
-        
-        await conn.sendMessage(m.chat, {
-            text: `ㅤㅤ⋆｡˚『 ╭ \`AVVERTIMENTO\` ╯ 』˚｡⋆\n╭\n│ 『 ⚠️ 』 \`utente:\` *@${m.sender.split('@')[0]}*\n│ 『 🚫 』 \`problema:\` *Spam mentre mutato*\n│ 『 ⚡ 』 \`rischio:\` *Rimozione dal gruppo*\n│ 『 📊 』 \`messaggi:\` *${userWarnings.count}/7*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`,
-            mentions: [m.sender],
-            contextInfo: {
-                ...global.fake.contextInfo,
-                externalAdReply: {
-                    title: userName,
-                    body: `Avvertimento spam - ${userWarnings.count}/7 messaggi`,
-                    thumbnailUrl: userPp,
-                    mediaType: 1,
-                    renderLargerThumbnail: false
-                }
-            }
-        })
-        
+        let warnMsg = `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· ⚠️ 𝐀𝐕𝐕𝐄𝐑𝐓𝐈𝐌𝐄𝐍𝐓𝐎 ⚠️ ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 👤 』 𝐔𝐭𝐞𝐧𝐭𝐞: @${m.sender.split('@')[0]}\n『 🚫 』 𝐕𝐢𝐨𝐥𝐚𝐳𝐢𝐨𝐧𝐞: _Stai spammando mentre sei mutato._\n『 📊 』 𝐌𝐞𝐬𝐬𝐚𝐠𝐠𝐢: *${userWarnings.count}/7*\n\nAl settimo messaggio verrai *Cacciato* dal gruppo.\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`;
+        await conn.sendMessage(m.chat, { text: warnMsg, contextInfo: legamContext('Rischio Ban', [m.sender]) })
         userWarnings.warned = true
         spamWarnings.set(m.sender, userWarnings)
     }
     
+    // KICK DOPO 7 MESSAGGI
     if (userWarnings.count >= 7) {
-        const userName = getUserName(m.sender, await conn.groupMetadata(m.chat).then(gm => gm.participants))
-        const userPp = await getUserProfilePic(conn, m.sender)
-        
         try {
-            await conn.sendMessage(m.chat, {
-                text: `ㅤㅤ⋆｡˚『 ╭ \`UTENTE RIMOSSO\` ╯ 』˚｡⋆\n╭\n│ 『 🚫 』 \`utente:\` *@${m.sender.split('@')[0]}*\n│ 『 ⚡ 』 \`motivo:\` *Spam eccessivo mentre mutato*\n│ 『 📊 』 \`messaggi:\` *${userWarnings.count} in poco tempo*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`,
-                mentions: [m.sender],
-                contextInfo: {
-                    ...global.fake.contextInfo,
-                    externalAdReply: {
-                        title: userName,
-                        body: 'Rimosso per spam eccessivo',
-                        thumbnailUrl: userPp,
-                        mediaType: 1,
-                        renderLargerThumbnail: false
-                    }
-                }
-            })
-            
+            let kickMsg = `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 🔨 𝐔𝐓𝐄𝐍𝐓𝐄 𝐑𝐈𝐌𝐎𝐒𝐒𝐎 🔨 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 👤 』 𝐔𝐭𝐞𝐧𝐭𝐞: @${m.sender.split('@')[0]}\n『 ⚡ 』 𝐌𝐨𝐭𝐢𝐯𝐨: _Spam eccessivo mentre era mutato._\n\nIl Legam OS non perdona.\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`;
+            await conn.sendMessage(m.chat, { text: kickMsg, contextInfo: legamContext('KICK AUTOMATICO', [m.sender]) })
             await conn.groupParticipantsUpdate(m.chat, [m.sender], 'remove')
             spamWarnings.delete(m.sender)
             mutedUsers.delete(normalizedSender)
         } catch (e) {
-            console.error('Errore rimozione utente:', e)
+            // Se il bot non è admin per cacciarlo, prolunga il mute
             const currentData = mutedUsers.get(normalizedSender)
-            mutedUsers.set(normalizedSender, {
-                ...currentData,
-                timestamp: Date.now() + (60 * 60000),
-                reason: currentData.reason + ' + spam eccessivo'
-            })
+            mutedUsers.set(normalizedSender, { ...currentData, timestamp: Date.now() + (60 * 60000), reason: currentData.reason + ' + Spam eccessivo' })
         }
     }
 
+    // Promemoria periodico che sei mutato (max 1 volta ogni 5 min)
     const shouldNotify = !data.lastNotification || (now - data.lastNotification) > 300000 
-    
     if (shouldNotify) {
-        const userName = getUserName(m.sender, await conn.groupMetadata(m.chat).then(gm => gm.participants))
-        const userPp = await getUserProfilePic(conn, m.sender)
         let remaining = formatTimeLeft(data.timestamp)
-        
+        let nMsg = `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 🤫 𝐒𝐈𝐋𝐄𝐍𝐙𝐈𝐎 🤫 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 🚫 』 @${m.sender.split('@')[0]} ti ricordo che sei *MUTATO*.\n『 ⏱️ 』 𝐓𝐞𝐦𝐩𝐨 𝐫𝐢𝐦𝐚𝐬𝐭𝐨: ${remaining}\n\nI tuoi messaggi verranno eliminati istantaneamente.\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`;
         try {
-            await conn.sendMessage(m.chat, {
-                text: `ㅤㅤ⋆｡˚『 ╭ \`SEI MUTATO\` ╯ 』˚｡⋆\n╭\n│ 『 🚫 』 \`utente:\` *@${m.sender.split('@')[0]}*\n│ 『 🔇 』 \`stato:\` *Non puoi parlare o usare comandi*\n│ 『 📝 』 \`motivo:\` *${data.reason}*\n│ 『 ⏱️ 』 \`tempo:\` *${remaining}*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`,
-                mentions: [m.sender],
-                contextInfo: {
-                    ...global.fake.contextInfo,
-                    externalAdReply: {
-                        title: userName,
-                        body: `Utente mutato - ${remaining}`,
-                        thumbnailUrl: userPp,
-                        mediaType: 1,
-                        renderLargerThumbnail: false
-                    }
-                }
-            })
+            await conn.sendMessage(m.chat, { text: nMsg, contextInfo: legamContext('Stato Mute', [m.sender]) })
             data.lastNotification = now
             mutedUsers.set(normalizedSender, data)
-        } catch (e) {
-            console.error('Errore invio notifica mute:', e)
-        }
+        } catch (e) {}
     }
 
-    return false
+    return false // Ferma l'esecuzione di altri comandi per questo utente
 }
 
+// Pulizia memoria periodica
 setInterval(() => {
     const now = Date.now()
     for (let [user, data] of mutedUsers.entries()) {
-        if (data.timestamp && now > data.timestamp) {
-            mutedUsers.delete(user)
-        }
+        if (data.timestamp && now > data.timestamp) mutedUsers.delete(user)
     }
-    
     for (let [user, warnings] of spamWarnings.entries()) {
-        if (now - warnings.lastMessage > 300000) {
-            spamWarnings.delete(user)
-        }
+        if (now - warnings.lastMessage > 300000) spamWarnings.delete(user)
     }
 }, 60000)
 
@@ -425,3 +296,4 @@ handler.admin = true
 handler.botAdmin = true
 
 export default handler
+
