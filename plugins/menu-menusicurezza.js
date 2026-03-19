@@ -7,7 +7,6 @@ let handler = async (m, { conn, usedPrefix }) => {
     if (!m.isGroup) return m.reply(`『 ⚠️ 』 \`Questo menu funziona solo nei gruppi!\``)
 
     // 🔥 LISTA FUNZIONI LEGATE AL TUO ATTIVA-DISATTIVA 🔥
-    // (Aggiungi o togli qui quello che vuoi far apparire nel menu)
     const securityFeatures = [
         { id: 'welcome', name: '👋 Benvenuto/Addio' },
         { id: 'antiLink', name: '🔗 Anti-Link (WhatsApp)' },
@@ -31,7 +30,7 @@ let handler = async (m, { conn, usedPrefix }) => {
         return `┃ ${isAttivo} ✦ *${f.name}* \n┃ ╰ ⌕ _(usa: ${usedPrefix}attiva ${nomeComando})_`
     }).join('\n┃\n')
 
-    // Estetica Legam OS
+    // Estetica Legam OS (Testo ultra-pulito)
     let menuText = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 · 🛡️ 𝐌𝐄𝐍𝐔 𝐒𝐈𝐂𝐔𝐑𝐄𝐙𝐙𝐀 🛡️ ·
@@ -67,12 +66,9 @@ ${statusList}
         }
     };
 
-    // Immagine di sicurezza (Fallback su Catbox per evitare crash se manca il file locale)
-    let defaultImg = 'https://files.catbox.moe/pyp87f.jpg'
-
+    // Invio del messaggio istantaneo (zero latenza)
     await conn.sendMessage(m.chat, {
-        image: { url: defaultImg },
-        caption: menuText,
+        text: menuText,
         mentions: [m.sender]
     }, { quoted: fakeVerifiedQuote })
 }
@@ -85,4 +81,5 @@ handler.admin = true // Solo gli admin possono aprirlo
 handler.group = true
 
 export default handler
+
 
