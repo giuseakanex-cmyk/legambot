@@ -86,7 +86,7 @@ function initResponseHandler(conn) {
 global.processedCalls = global.processedCalls || new Map()
 
 // ==========================================
-// LEGAM OS - MOTORE BENVENUTO (SOLO FAKE QUOTE VERIFICATO)
+// LEGAM OS - BENVENUTO E ADDIO (MINIATURA QUADRATA VIP)
 // ==========================================
 export async function participantsUpdate({ id, participants, action }) {
     try {
@@ -95,7 +95,7 @@ export async function participantsUpdate({ id, participants, action }) {
         global.processedWelcome.add(eventKey);
         setTimeout(() => global.processedWelcome.delete(eventKey), 10000);
 
-        // Se non è un add o un remove (es. è un promote/demote), lo ignoriamo perché hai già il tuo sistema!
+        // Funziona ESCLUSIVAMENTE per entrate e uscite
         if (action !== 'add' && action !== 'remove') return;
 
         console.log(chalk.bgHex('#3b0d95').white.bold(' LEGAM OS ') + chalk.yellow(` 🚨 Azione attivata: ${action} in ${id.split('@')[0]}`));
@@ -105,7 +105,7 @@ export async function participantsUpdate({ id, participants, action }) {
         let chat = global.db.data.chats[id] || {};
         let nomeDelBot = global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`;
 
-        // Controllo se il welcome è spento nel db
+        // Se il welcome è spento nel db, si ferma
         if (!chat.welcome) return;
 
         let groupMetadata = global.groupCache.get(id) || await this.groupMetadata(id).catch(_ => null) || {};
@@ -113,10 +113,19 @@ export async function participantsUpdate({ id, participants, action }) {
         let groupDesc = groupMetadata.desc ? groupMetadata.desc.toString() : 'Nessuna descrizione disponibile.';
 
         for (let user of participants) {
+            
+            // Scarichiamo la foto profilo dell'utente che entra/esce
+            let pp = 'https://files.catbox.moe/57bmbv.jpg'; // Immagine di fallback
+            try { pp = await this.profilePictureUrl(user, 'image'); } catch (e) {}
+
+            // Prepara il buffer dell'immagine per WhatsApp
+            let apii = { data: '' };
+            try { apii = await this.getFile(pp); } catch (e) {}
+
             let cleanUser = user.split('@')[0];
             let text = '';
 
-            // Applicazione delle variabili
+            // Applicazione delle variabili per Add e Remove
             if (action === 'add') {
                 let customWelcome = chat.sWelcome || `「  *BENVENUTO* 」\n𝗔𝗼 𝗮𝘁𝘁𝗲𝗻𝘁𝗼 𝗰𝗵𝗲 𝗾𝘂𝗮 𝗱𝗲𝗻𝘁𝗿𝗼 𝗳𝗮𝗻𝗻𝗼 𝗮 𝗯𝗮𝗹𝗱𝗼𝗿𝗶𝗮 𝗳𝗿𝗮𝘁è\n👤 *Utente:* @user\n🎉 *Gruppo:* @group`;
                 text = customWelcome.replace(/@user/g, `@${cleanUser}`).replace(/@group/g, groupName).replace(/@desc/g, groupDesc);
@@ -127,21 +136,6 @@ export async function participantsUpdate({ id, participants, action }) {
 
             if (!text) continue;
 
-            // 🔥 TRUCCO QUOTE VIP: "whatsapp business" Verificato 🔥
-            let fakeVerifiedQuote = {
-                key: {
-                    fromMe: false,
-                    participant: `0@s.whatsapp.net`, 
-                    remoteJid: id // Questo forza WhatsApp a scrivere "Gruppo •"
-                },
-                message: {
-                    locationMessage: {
-                        name: 'whatsapp business', // Scritta in minuscolo come da richiesta
-                        address: nomeDelBot, 
-                    }
-                }
-            };
-
             try {
                 await this.sendMessage(id, {
                     text: text,
@@ -149,16 +143,25 @@ export async function participantsUpdate({ id, participants, action }) {
                     contextInfo: {
                         mentionedJid: [user],
                         isForwarded: true,
+                        // Finto canale Inoltrato in alto
                         forwardedNewsletterMessageInfo: {
                             newsletterJid: '120363233544482011@newsletter',
                             serverMessageId: 100,
                             newsletterName: nomeDelBot
+                        },
+                        // 🔥 LA MAGIA DELLA MINIATURA (Uguale sia per Benvenuto che Addio) 🔥
+                        externalAdReply: {
+                            title: action === 'add' ? '𝐁𝐄𝐍𝐕𝐄𝐍𝐔𝐓𝐎 👑' : '𝐀𝐃𝐃𝐈𝐎 👋🏻',
+                            body: 'Legam OS System',
+                            mediaType: 1, // Layout piccolo quadrato
+                            renderLargerThumbnail: false, // Disattiva l'immagine gigante
+                            thumbnailUrl: pp,
+                            thumbnail: apii.data || Buffer.alloc(0)
                         }
-                        // externalAdReply COMPLETAMENTE RIMOSSO! Nessuna immagine verrà mostrata.
                     }
-                }, { quoted: fakeVerifiedQuote }); 
+                }); 
                 
-                console.log(chalk.green(`[✓] Messaggio Minimal VIP (${action}) inviato con successo!`));
+                console.log(chalk.green(`[✓] Messaggio con Miniatura VIP (${action}) inviato con successo!`));
             } catch (err) {
                 console.error(chalk.red("[X] Errore invio Welcome/Goodbye:"), err);
             }
@@ -194,7 +197,6 @@ export async function handler(chatUpdate) {
         if (m.messageStubType === 27) actionTrigger = 'add';
         else if (m.messageStubType === 28 || m.messageStubType === 32) actionTrigger = 'remove';
 
-        // Tolti i codici 29 (promote) e 30 (demote)
         if (actionTrigger) {
             let who = m.messageStubParameters[0];
             if (who) {
