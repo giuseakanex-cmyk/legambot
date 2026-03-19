@@ -5,10 +5,13 @@ let handler = async (m, { conn }) => {
     // Se l'admin non ha acceso il bestemmiometro nel gruppo, il bot ignora
     if (!chat.bestemmiometro) return
 
-    // Aggiunge 1 al contatore delle bestemmie dell'utente
+    // Aggiunge 1 al contatore delle bestemmie dell'utente, in silenzio
     user.blasphemy = (user.blasphemy || 0) + 1
 
-    let msg = `
+    // 🔥 ORA SCATTA SOLO OGNI 10 BESTEMMIE ESATTE 🔥
+    if (user.blasphemy % 10 === 0) {
+        
+        let msg = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 · 🤬 𝐁𝐄𝐒𝐓𝐄𝐌𝐌𝐈𝐎𝐌𝐄𝐓𝐑𝐎 🤬 ·
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
@@ -19,20 +22,21 @@ let handler = async (m, { conn }) => {
 ⚠️ _Datti una calmata o ti scaglio un fulmine dal Legam OS._
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
 
-    // 🔥 CONTESTO CANALE VIP (INFALLIBILE E ANTI-CRASH) 🔥
-    let channelContext = {
-        mentionedJid: [m.sender],
-        isForwarded: true,
-        forwardingScore: 999,
-        forwardedNewsletterMessageInfo: {
-            newsletterJid: '120363233544482011@newsletter',
-            serverMessageId: 100,
-            newsletterName: global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`
-        }
-    };
+        // 🔥 CONTESTO CANALE VIP (INFALLIBILE E ANTI-CRASH) 🔥
+        let channelContext = {
+            mentionedJid: [m.sender],
+            isForwarded: true,
+            forwardingScore: 999,
+            forwardedNewsletterMessageInfo: {
+                newsletterJid: '120363233544482011@newsletter',
+                serverMessageId: 100,
+                newsletterName: global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`
+            }
+        };
 
-    // Invia il messaggio all'istante
-    await conn.sendMessage(m.chat, { text: msg, contextInfo: channelContext }, { quoted: m })
+        // Invia il messaggio punitivo
+        await conn.sendMessage(m.chat, { text: msg, contextInfo: channelContext }, { quoted: m })
+    }
 }
 
 // 🔥 INTERCETTATORE ATTIVO: Dà priorità assoluta a queste parole 🔥
