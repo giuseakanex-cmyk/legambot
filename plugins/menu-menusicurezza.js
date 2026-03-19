@@ -6,19 +6,32 @@ let handler = async (m, { conn, usedPrefix }) => {
     // Se non è un gruppo, avvisa
     if (!m.isGroup) return m.reply(`『 ⚠️ 』 \`Questo menu funziona solo nei gruppi!\``)
 
-    // 🔥 LISTA FUNZIONI LEGATE AL TUO ATTIVA-DISATTIVA 🔥
+    // 🔥 LISTA FUNZIONI ALLINEATA AL TUO DATABASE 🔥
     const securityFeatures = [
-        { id: 'welcome', name: '👋 Benvenuto/Addio' },
-        { id: 'antiLink', name: '🔗 Anti-Link (WhatsApp)' },
-        { id: 'antiLink2', name: '🌐 Anti-Link (Social)' },
+        { id: 'welcome', name: '👋 Benvenuto' },
+        { id: 'goodbye', name: '🚪 Addio' },
+        { id: 'antiLink', name: '🔗 Anti-Link WA' },
+        { id: 'antiLinkUni', name: '🌍 Anti-Link Uni' },
+        { id: 'antiLink2', name: '🌐 Anti-Link Social' },
         { id: 'antispam', name: '🛑 Anti-Spam' },
         { id: 'antiparolacce', name: '🧼 Filtro Parolacce' },
         { id: 'bestemmiometro', name: '🤬 Bestemmiometro' },
         { id: 'antiporno', name: '🔞 Anti-Porno' },
+        { id: 'antigore', name: '🚫 Anti-Gore' },
         { id: 'antiBot', name: '🤖 Anti-Bot' },
+        { id: 'antiBot2', name: '🤖 Anti-Subbots' },
+        { id: 'antitrava', name: '🧨 Anti-Trava' },
         { id: 'antimedia', name: '🖼️ Anti-Media' },
         { id: 'antioneview', name: '👁️‍🗨️ Anti-ViewOnce' },
+        { id: 'antitagall', name: '🏷️ Anti-TagAll' },
+        { id: 'antisondaggi', name: '📊 Anti-Sondaggi' },
+        { id: 'antivoip', name: '📞 Anti-Voip' },
+        { id: 'autotrascrizione', name: '📝 Auto-Trascrizione' },
+        { id: 'autotraduzione', name: '🌍 Auto-Traduzione' },
         { id: 'modoadmin', name: '🛡️ Solo Admin' },
+        { id: 'rileva', name: '📡 Rileva Eventi' },
+        { id: 'ai', name: '🧠 Intelligenza Artif.' },
+        { id: 'vocali', name: '🎤 Risposte Vocali' },
         { id: 'reaction', name: '😎 Auto-Reazioni' },
         { id: 'autolevelup', name: '⬆️ Auto-LevelUp' }
     ];
@@ -30,7 +43,7 @@ let handler = async (m, { conn, usedPrefix }) => {
         return `┃ ${isAttivo} ✦ *${f.name}* \n┃ ╰ ⌕ _(usa: ${usedPrefix}attiva ${nomeComando})_`
     }).join('\n┃\n')
 
-    // Estetica Legam OS (Testo ultra-pulito)
+    // Estetica Legam OS (Testo ultra-pulito e completo)
     let menuText = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 · 🛡️ 𝐌𝐄𝐍𝐔 𝐒𝐈𝐂𝐔𝐑𝐄𝐙𝐙𝐀 🛡️ ·
@@ -55,6 +68,7 @@ ${statusList}
     let channelContext = {
         mentionedJid: [m.sender],
         isForwarded: true,
+        forwardingScore: 999,
         forwardedNewsletterMessageInfo: {
             newsletterJid: '120363233544482011@newsletter', 
             serverMessageId: 100,
@@ -62,7 +76,7 @@ ${statusList}
         }
     };
 
-    // Invio del messaggio istantaneo quotando il messaggio di chi lo ha richiesto
+    // Invio del messaggio istantaneo quotando chi lo ha richiesto
     await conn.sendMessage(m.chat, {
         text: menuText,
         contextInfo: channelContext
