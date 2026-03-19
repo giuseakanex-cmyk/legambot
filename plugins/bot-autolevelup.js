@@ -136,7 +136,7 @@ export async function before(m, { conn }) {
             ctx.font = '30px Arial, sans-serif'
             ctx.fillStyle = '#9f7aea'
             ctx.textAlign = 'center'
-            ctx.fillText('✧ ⋆ ┈ ┈ ⋆ ☾⋆⁺₊✧ varebot ✧₊⁺⋆☽ ⋆ ┈ ┈ ⋆ ✧', width/2, height - 40)
+            ctx.fillText('✧ ⋆ ┈ ┈ ⋆ ☾⋆⁺₊✧ legambot ✧₊⁺⋆☽ ⋆ ┈ ┈ ⋆ ✧', width/2, height - 40)
             
             const buffer = canvas.toBuffer('image/jpeg')
             const caption = `
