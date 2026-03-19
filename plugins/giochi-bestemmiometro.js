@@ -1,24 +1,14 @@
-let handler = m => m
-
-handler.before = async function (m, { conn }) {
-    if (!m.isGroup) return
-    
+let handler = async (m, { conn }) => {
     let chat = global.db.data.chats[m.chat] || {}
     let user = global.db.data.users[m.sender] || {}
 
-    // Se l'admin non ha acceso il bestemmiometro, il bot ignora
+    // Se l'admin non ha acceso il bestemmiometro nel gruppo, il bot ignora
     if (!chat.bestemmiometro) return
 
-    // Il dizionario dei peccati
-    const regex = /(porco dio|porcodio|dio bastardo|dio cane|porcamadonna|madonnaporca|porca madonna|madonna porca|dio cristo|diocristo|dio maiale|diomaiale|jesucristo|jesu cristo|cristo madonna|madonna impanata|dio cristo|cristo dio|dio frocio|dio gay|dio madonna|dio infuocato|dio crocifissato|madonna puttana|madonna vacca|madonna inculata|maremma maiala|padre pio|jesu impanato|jesu porco|diocane|dio capra|capra dio|padre pio ti spio)/i
+    // Aggiunge 1 al contatore delle bestemmie dell'utente
+    user.blasphemy = (user.blasphemy || 0) + 1
 
-    if (regex.test(m.text)) {
-        user.blasphemy = (user.blasphemy || 0) + 1
-
-        // Scatta la notifica ogni 10 bestemmie esatte
-        if (user.blasphemy % 10 === 0) {
-            
-            let msg = `
+    let msg = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 · 🤬 𝐁𝐄𝐒𝐓𝐄𝐌𝐌𝐈𝐎𝐌𝐄𝐓𝐑𝐎 🤬 ·
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
@@ -29,29 +19,27 @@ handler.before = async function (m, { conn }) {
 ⚠️ _Datti una calmata o ti scaglio un fulmine dal Legam OS._
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
 
-            // 🔥 TRUCCO QUOTE VIP: "whatsapp business" Verificato 🔥
-            let fakeVerifiedQuote = {
-                key: {
-                    fromMe: false,
-                    participant: `0@s.whatsapp.net`, 
-                    ...(m.chat ? { remoteJid: "status@broadcast" } : {})
-                },
-                message: {
-                    locationMessage: {
-                        name: 'whatsapp business', 
-                        address: global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`, 
-                    }
-                }
-            };
-
-            try {
-                await conn.sendMessage(m.chat, { text: msg, mentions: [m.sender] }, { quoted: fakeVerifiedQuote })
-            } catch (e) {
-                await conn.sendMessage(m.chat, { text: msg, mentions: [m.sender] }, { quoted: m })
-            }
+    // 🔥 CONTESTO CANALE VIP (INFALLIBILE E ANTI-CRASH) 🔥
+    let channelContext = {
+        mentionedJid: [m.sender],
+        isForwarded: true,
+        forwardingScore: 999,
+        forwardedNewsletterMessageInfo: {
+            newsletterJid: '120363233544482011@newsletter',
+            serverMessageId: 100,
+            newsletterName: global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`
         }
-    }
+    };
+
+    // Invia il messaggio all'istante
+    await conn.sendMessage(m.chat, { text: msg, contextInfo: channelContext }, { quoted: m })
 }
 
+// 🔥 INTERCETTATORE ATTIVO: Dà priorità assoluta a queste parole 🔥
+handler.customPrefix = /(porco dio|porcodio|dio bastardo|dio cane|porcamadonna|madonnaporca|porca madonna|madonna porca|dio cristo|diocristo|dio maiale|diomaiale|jesucristo|jesu cristo|cristo madonna|madonna impanata|dio cristo|cristo dio|dio frocio|dio gay|dio madonna|dio infuocato|dio crocifissato|madonna puttana|madonna vacca|madonna inculata|maremma maiala|padre pio|jesu impanato|jesu porco|diocane|dio capra|capra dio|padre pio ti spio)/i
+handler.command = new RegExp
+handler.group = true
+
 export default handler
+
 
