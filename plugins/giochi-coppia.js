@@ -11,52 +11,50 @@ const getBase64Image = (filePath, fallbackUrl) => {
             const ext = path.extname(filePath).substring(1);
             return `data:image/${ext === 'svg' ? 'svg+xml' : ext};base64,${fileData.toString('base64')}`;
         }
-    } catch (e) {
-        console.error(`Impossibile leggere file locale ${filePath}:`, e.message);
-    }
+    } catch (e) {}
     return fallbackUrl;
 }
 
-const getLovePhrases = (p, n1, n2) => {
+const getLovePhrases = (p) => {
     if (p <= 10) return [
-        `*${p}%* - Vi odiate. Si vede da Marte.`,
-        `*${p}%* - Meglio se uno dei due cambia pianeta.`,
-        `*${p}%* - C'è più amore tra un vegano e una fiorentina.`,
-        `*${p}%* - Buttatevi nell'umido, separatamente.`
+        `Vi odiate. Si vede da Marte.`,
+        `Meglio se uno dei due cambia pianeta.`,
+        `C'è più amore tra un vegano e una fiorentina.`,
+        `Buttatevi nell'umido, separatamente.`
     ];
     if (p <= 30) return [
-        `*${p}%* - La noia mortale.`,
-        `*${p}%* - Arido come il deserto. Lasciate perdere.`,
-        `*${p}%* - Siete una barzelletta che non fa ridere.`,
-        `*${p}%* - Friendzone livello: "Sei come un fratello".`
+        `La noia mortale.`,
+        `Arido come il deserto. Lasciate perdere.`,
+        `Siete una barzelletta che non fa ridere.`,
+        `Friendzone livello: "Sei come un fratello".`
     ];
     if (p <= 55) return [
-        `*${p}%* - Forse da ubriachi... ma molto ubriachi.`,
-        `*${p}%* - Ci sono margini di miglioramento (forse).`,
-        `*${p}%* - Una notte e via, e poi blocco su WhatsApp.`,
-        `*${p}%* - Vi mancano un po' di pezzi per funzionare.`
+        `Forse da ubriachi... ma molto ubriachi.`,
+        `Ci sono margini di miglioramento (forse).`,
+        `Una notte e via, e poi blocco su WhatsApp.`,
+        `Vi mancano un po' di pezzi per funzionare.`
     ];
     if (p <= 80) return [
-        `*${p}%* - C'è tensione sessuale nell'aria!`,
-        `*${p}%* - Si prospetta un "Netflix & Chill" interessante.`,
-        `*${p}%* - L'attrazione fisica c'è tutta. Dateci dentro!`,
-        `*${p}%* - Una cena a lume di candela e poi... chissà.`
+        `C'è tensione sessuale nell'aria!`,
+        `Si prospetta un "Netflix & Chill" interessante.`,
+        `L'attrazione fisica c'è tutta. Dateci dentro!`,
+        `Una cena a lume di candela e poi... chissà.`
     ];
     if (p < 95) return [
-        `*${p}%* - Chiamate i pompieri! Qui si brucia!`,
-        `*${p}%* - Siete fatti l'uno per l'altra. Che invidia.`,
-        `*${p}%* - Un legame spaziale! Verso l'infinito e oltre!`,
-        `*${p}%* - Esplosivi! Letto, cuore e anima connessi.`
+        `Chiamate i pompieri! Qui si brucia!`,
+        `Siete fatti l'uno per l'altra. Che invidia.`,
+        `Un legame spaziale! Verso l'infinito e oltre!`,
+        `Esplosivi! Letto, cuore e anima connessi.`
     ];
     return [
-        `*100%* - PREPARATE IL MATRIMONIO. ORA.`,
-        `*100%* - La perfezione esiste. Siete voi due.`,
-        `*100%* - Compatibilità assoluta: Sesso Divino e Amore Eterno!`
+        `PREPARATE IL MATRIMONIO. ORA.`,
+        `La perfezione esiste. Siete voi due.`,
+        `Compatibilità assoluta: Sesso Divino e Amore Eterno!`
     ];
 }
 
-const getRandomPhrase = (percentage, n1, n2) => {
-    const list = getLovePhrases(percentage, n1, n2);
+const getRandomPhrase = (percentage) => {
+    const list = getLovePhrases(percentage);
     return list[Math.floor(Math.random() * list.length)];
 }
 
@@ -68,122 +66,28 @@ const createCoupleCard = (props) => {
   else { barColorStart = '#ec4899'; barColorEnd = '#be185d'; }
 
   return React.createElement('div', {
-    style: {
-      fontFamily: 'Inter, Arial, sans-serif',
-      width: '600px',
-      height: '400px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      overflow: 'hidden',
-      backgroundColor: '#1a1a1a'
-    }
+    style: { fontFamily: 'Inter, Arial, sans-serif', width: '600px', height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', backgroundColor: '#1a1a1a' }
   },
-    React.createElement('div', {
-        style: {
-            position: 'absolute', top: '-20px', left: '-20px', right: '-20px', bottom: '-20px',
-            backgroundImage: `url('${backgroundData}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: 'blur(7px)',
-            opacity: 0.8,
-            zIndex: 1
-        }
-    }),
-    React.createElement('div', {
-        style: {
-            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 2
-        }
-    }),
-    React.createElement('div', {
-      style: {
-        width: '85%',
-        height: '67%',
-        borderRadius: '20px',
-        padding: '20px',
-        background: 'rgba(255, 255, 255, 0.08)',
-        backdropFilter: 'blur(8px)',
-        border: '1px solid rgba(255, 255, 255, 0.15)',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        zIndex: 3
-      }
-    },
-      React.createElement('div', {
-        style: { flex: '0 0 130px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }
-      },
-        React.createElement('div', {
-          style: {
-            width: '100px', height: '100px', borderRadius: '50%',
-            border: '3px solid rgba(255,255,255,0.9)',
-            boxShadow: '0 0 15px rgba(255,255,255,0.2)',
-            overflow: 'hidden', background: '#000'
-          }
-        },
+    React.createElement('div', { style: { position: 'absolute', top: '-20px', left: '-20px', right: '-20px', bottom: '-20px', backgroundImage: `url('${backgroundData}')`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(7px)', opacity: 0.8, zIndex: 1 } }),
+    React.createElement('div', { style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)', zIndex: 2 } }),
+    React.createElement('div', { style: { width: '85%', height: '67%', borderRadius: '20px', padding: '20px', background: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.15)', boxShadow: '0 20px 40px rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 3 } },
+      React.createElement('div', { style: { flex: '0 0 130px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' } },
+        React.createElement('div', { style: { width: '100px', height: '100px', borderRadius: '50%', border: '3px solid rgba(255,255,255,0.9)', boxShadow: '0 0 15px rgba(255,255,255,0.2)', overflow: 'hidden', background: '#000' } },
             React.createElement('img', { src: avatar1, style: { width: '100%', height: '100%', objectFit: 'cover' } })
         ),
-        React.createElement('div', { 
-            style: { 
-                fontSize: '16px', fontWeight: 'bold', color: '#fff', textAlign: 'center', 
-                textShadow: '0 2px 2px rgba(0,0,0,0.8)', maxWidth: '130px', 
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-            } 
-        }, name1)
+        React.createElement('div', { style: { fontSize: '16px', fontWeight: 'bold', color: '#fff', textAlign: 'center', textShadow: '0 2px 2px rgba(0,0,0,0.8)', maxWidth: '130px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, name1)
       ),
-      React.createElement('div', {
-        style: { flex: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 15px' }
-      },
-        React.createElement('div', {
-          style: {
-            fontSize: '42px', fontWeight: '900',
-            background: `linear-gradient(to bottom, #fff, ${barColorStart})`,
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.3))',
-            marginBottom: '5px'
-          }
-        }, `${percentage}%`),
-        React.createElement('div', {
-          style: {
-            width: '100%', height: '24px', background: 'rgba(0,0,0,0.6)',
-            borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)',
-            overflow: 'hidden', position: 'relative'
-          }
-        },
-          React.createElement('div', {
-            style: {
-              width: `${percentage}%`, height: '100%',
-              background: `linear-gradient(90deg, ${barColorStart}, ${barColorEnd})`,
-              boxShadow: `0 0 15px ${barColorStart}`,
-              borderRadius: '12px'
-            }
-          })
+      React.createElement('div', { style: { flex: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 15px' } },
+        React.createElement('div', { style: { fontSize: '42px', fontWeight: '900', background: `linear-gradient(to bottom, #fff, ${barColorStart})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.3))', marginBottom: '5px' } }, `${percentage}%`),
+        React.createElement('div', { style: { width: '100%', height: '24px', background: 'rgba(0,0,0,0.6)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' } },
+          React.createElement('div', { style: { width: `${percentage}%`, height: '100%', background: `linear-gradient(90deg, ${barColorStart}, ${barColorEnd})`, boxShadow: `0 0 15px ${barColorStart}`, borderRadius: '12px' } })
         ),
       ),
-      React.createElement('div', {
-        style: { flex: '0 0 130px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }
-      },
-        React.createElement('div', {
-          style: {
-            width: '100px', height: '100px', borderRadius: '50%',
-            border: '3px solid rgba(255,255,255,0.9)',
-            boxShadow: '0 0 15px rgba(255,255,255,0.2)',
-            overflow: 'hidden', background: '#000'
-          }
-        },
+      React.createElement('div', { style: { flex: '0 0 130px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' } },
+        React.createElement('div', { style: { width: '100px', height: '100px', borderRadius: '50%', border: '3px solid rgba(255,255,255,0.9)', boxShadow: '0 0 15px rgba(255,255,255,0.2)', overflow: 'hidden', background: '#000' } },
             React.createElement('img', { src: avatar2, style: { width: '100%', height: '100%', objectFit: 'cover' } })
         ),
-        React.createElement('div', { 
-            style: { 
-                fontSize: '16px', fontWeight: 'bold', color: '#fff', textAlign: 'center', 
-                textShadow: '0 2px 2px rgba(0,0,0,0.8)', maxWidth: '130px', 
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-            } 
-        }, name2)
+        React.createElement('div', { style: { fontSize: '16px', fontWeight: 'bold', color: '#fff', textAlign: 'center', textShadow: '0 2px 2px rgba(0,0,0,0.8)', maxWidth: '130px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, name2)
       )
     )
   )
@@ -192,10 +96,12 @@ const createCoupleCard = (props) => {
 export const generateCoupleImage = async ({ name1, name2, percentage, avatar1, avatar2 }) => {
   const browserlessKey = global.APIKeys?.browserless
   if (!browserlessKey) {
-    console.warn('Browserless API key mancante.')
-    throw new Error('API key Browserless non configurata.')
+    throw new Error('BROWSERLESS_MISSING') // Lancerà il fallback testuale
   }
-  const backgroundData = getBase64Image(varebot);
+  
+  // 🔥 FIX VARIABILI MANCANTI 🔥
+  const backgroundData = getBase64Image('./media/bg.jpg', 'https://files.catbox.moe/pyp87f.jpg');
+
   try {
     const reactElement = createCoupleCard({ name1, name2, percentage, avatar1, avatar2, backgroundData })
     const htmlContent = renderToString(reactElement)
@@ -207,15 +113,8 @@ export const generateCoupleImage = async ({ name1, name2, percentage, avatar1, a
 
     const response = await axios.post(url, {
       html: fullHtml,
-      options: {
-        type: 'jpeg',
-        quality: 85,
-        fullPage: false
-      },
-      viewport: {
-        width: 600,
-        height: 400
-      }
+      options: { type: 'jpeg', quality: 85, fullPage: false },
+      viewport: { width: 600, height: 400 }
     }, {
       responseType: 'arraybuffer',
       timeout: 25000
@@ -223,38 +122,35 @@ export const generateCoupleImage = async ({ name1, name2, percentage, avatar1, a
 
     return response.data
   } catch (error) {
-    console.error('Errore generateCoupleImage:', error.message)
-    throw new Error(`Errore generazione immagine`)
+    throw new Error('BROWSERLESS_ERROR')
   }
 }
 
-var handler = async (m, { conn, text, usedPrefix }) => {
-  
+let handler = async (m, { conn, text, usedPrefix }) => {
   try {
     let name1 = ''
     let name2 = ''
     let jid1 = m.sender
     let jid2 = null
+
     const safeName = async (jid) => {
         try { return await conn.getName(jid) } catch { return jid.split('@')[0] }
     }
+
     if (m.quoted) {
         jid2 = m.quoted.sender
         name1 = await safeName(jid1)
         name2 = await safeName(jid2)
-    }
-    else if (m.mentionedJid && m.mentionedJid.length >= 2) {
+    } else if (m.mentionedJid && m.mentionedJid.length >= 2) {
         jid1 = m.mentionedJid[0]
         jid2 = m.mentionedJid[1]
         name1 = await safeName(jid1)
         name2 = await safeName(jid2)
-    }
-    else if (m.mentionedJid && m.mentionedJid.length === 1) {
+    } else if (m.mentionedJid && m.mentionedJid.length === 1) {
         jid2 = m.mentionedJid[0]
         name1 = await safeName(jid1)
         name2 = await safeName(jid2)
-    }
-    else if (text) {
+    } else if (text) {
         const parts = text.trim().split(/\s+/)
         if (parts.length >= 2) {
             name1 = parts[0]
@@ -266,84 +162,70 @@ var handler = async (m, { conn, text, usedPrefix }) => {
             name2 = text.trim()
             jid2 = null
         }
+    } else {
+        return m.reply(`『 ⚠️ 』 \`Menziona qualcuno o scrivi due nomi!\`\n_Es: ${usedPrefix}coppia @utente_`)
     }
-    else {
-        return m.reply(`✨ *Menziona qualcuno o scrivi due nomi!*\nEsempio: *${usedPrefix}coppia @utente*`)
-    }
+
     const getAvatar = async (jid) => {
-        if (!jid) return getBase64Image(varebotpfp);
-        try {
-            return await conn.profilePictureUrl(jid, 'image');
-        } catch {
-            return getBase64Image(varebotpfp);
-        }
+        if (!jid) return 'https://files.catbox.moe/57bmbv.jpg'; // 🔥 FIX FALLBACK AVATAR 🔥
+        try { return await conn.profilePictureUrl(jid, 'image'); } 
+        catch { return 'https://files.catbox.moe/57bmbv.jpg'; }
     }
 
     const avatar1 = await getAvatar(jid1)
     const avatar2 = await getAvatar(jid2)
 
-    // 3. Calcoli
     let percentage = Math.floor(Math.random() * 101)
-    let captionText = getRandomPhrase(percentage, name1, name2)
+    let phrase = getRandomPhrase(percentage)
 
-    m.reply('🔮 *Consultando gli astri...*')
-    const imageBuffer = await generateCoupleImage({ 
-        name1, name2, percentage, avatar1, avatar2 
-    })
-    let ricalcolaCmd = ''
-    if (jid1 && jid2 && jid1 !== m.sender) {
-        ricalcolaCmd = `${usedPrefix}coppia @${jid1.split('@')[0]} @${jid2.split('@')[0]}`
-    } else if (jid2) {
-        ricalcolaCmd = `${usedPrefix}coppia @${jid1.split('@')[0]} @${jid2.split('@')[0]}`
-    } else {
-        ricalcolaCmd = `${usedPrefix}coppia ${name1} ${name2}`
-    }
+    // 🔥 PREPARAZIONE GRAFICA VIP LEGAM OS 🔥
+    let channelContext = {
+        mentionedJid: [jid1, jid2].filter(v => v),
+        isForwarded: true,
+        forwardingScore: 999,
+        forwardedNewsletterMessageInfo: {
+            newsletterJid: '120363233544482011@newsletter',
+            serverMessageId: 100,
+            newsletterName: `💘 Affinità di Coppia`
+        }
+    };
 
-    const buttons = [
-      { buttonId: ricalcolaCmd, buttonText: { displayText: 'Ricalcola 🎲' }, type: 1 }
-    ]
+    let textMsg = `
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
+· 💘 𝐓𝐄𝐒𝐓 𝐀𝐅𝐅𝐈𝐍𝐈𝐓𝐀' 💘 ·
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 
-    await conn.sendMessage(m.chat, {
-      image: imageBuffer,
-      caption: captionText,
-      footer: 'vare ✧ bot',
-      buttons,
-      mentions: conn.parseMention(captionText + ricalcolaCmd)
-    }, { quoted: m })
-    if (percentage === 100 && jid2) {
-       m.reply(`💍 *DESTINO COMPIUTO!* Volete sposarvi? (Scrivete "sì")`, null, { mentions: [jid1, jid2] })
-       
-       let filter = msg => (msg.text?.toLowerCase() === 'si' || msg.text?.toLowerCase() === 'sì') && (msg.sender == jid1 || msg.sender == jid2)
-       let collected = []
-       
-       try {
-           let timeout = Date.now() + 60000
-           while (collected.length < 2 && Date.now() < timeout) {
-               let res = await conn.awaitMessage(m.chat, filter, 60000).catch(() => null)
-               if(res && !collected.includes(res.sender)) collected.push(res.sender)
-           }
-           
-           if (collected.length === 2) {
-                let file = './sposi.json'
-                let sposi = []
-                if (fs.existsSync(file)) try { sposi = JSON.parse(fs.readFileSync(file)) } catch {}
-                sposi.push({ partner1: name1, partner2: name2, date: new Date().toISOString() })
-                fs.writeFileSync(file, JSON.stringify(sposi, null, 2))
-                conn.reply(m.chat, `💞 *VI DICHIARO MARITO E MOGLIE (o quello che siete)!* 🎉`, m)
-           }
-       } catch(e) {
-       }
+『 👩‍❤️‍👨 』 𝐂𝐨𝐩𝐩𝐢𝐚:
+· ${name1}
+· ${name2}
+
+『 📊 』 𝐂𝐨𝐦𝐩𝐚𝐭𝐢𝐛𝐢𝐥𝐢𝐭𝐚': *${percentage}%*
+╰ ⌕ _"${phrase}"_
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
+
+    try {
+        // Tenta di generare l'immagine con Browserless
+        m.reply('🔮 _Consultando gli astri..._')
+        const imageBuffer = await generateCoupleImage({ name1, name2, percentage, avatar1, avatar2 })
+        
+        // Se ha l'API e funziona, manda l'immagine
+        await conn.sendMessage(m.chat, { image: imageBuffer, caption: textMsg, contextInfo: channelContext }, { quoted: m })
+
+    } catch (err) {
+        // 🔥 FALLBACK TESTUALE VIP SE MANCA L'API (o se c'è un errore dell'immagine) 🔥
+        await conn.sendMessage(m.chat, { text: textMsg, contextInfo: channelContext }, { quoted: m })
     }
 
   } catch (e) {
     console.error(e)
-    m.reply(`❌ Errore: ${e.message}`)
+    m.reply(`❌ \`Errore:\`\n${e.message}`)
   }
 }
 
 handler.help = ['coppia']
 handler.tags = ['giochi']
 handler.command = /^(ship|love|amore|coppia)$/i
-handler.register = true
+handler.group = true
 
 export default handler
+
