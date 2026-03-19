@@ -51,26 +51,22 @@ ${statusList}
  ୧・💎 *𝐀𝐝𝐦𝐢𝐧:* @${m.sender.split('@')[0]}
 ╰♡꒷ ๑ ⋆˚₊⋆───ʚ˚ɞ───⋆˚₊⋆ ๑ ⪩`.trim()
 
-    // 🔥 TRUCCO QUOTE VIP: "whatsapp business" Verificato 🔥
-    let fakeVerifiedQuote = {
-        key: {
-            fromMe: false,
-            participant: `0@s.whatsapp.net`, 
-            ...(m.chat ? { remoteJid: "status@broadcast" } : {})
-        },
-        message: {
-            locationMessage: {
-                name: 'whatsapp business', 
-                address: nomeDelBot, 
-            }
+    // 🔥 CONTESTO CANALE VIP (INFALLIBILE, ANTI-CRASH) 🔥
+    let channelContext = {
+        mentionedJid: [m.sender],
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+            newsletterJid: '120363233544482011@newsletter', 
+            serverMessageId: 100,
+            newsletterName: nomeDelBot
         }
     };
 
-    // Invio del messaggio istantaneo (zero latenza)
+    // Invio del messaggio istantaneo quotando il messaggio di chi lo ha richiesto
     await conn.sendMessage(m.chat, {
         text: menuText,
-        mentions: [m.sender]
-    }, { quoted: fakeVerifiedQuote })
+        contextInfo: channelContext
+    }, { quoted: m })
 }
 
 handler.help = ['menusicurezza']
