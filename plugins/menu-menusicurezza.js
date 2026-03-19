@@ -6,60 +6,67 @@ let handler = async (m, { conn, usedPrefix }) => {
     // Se non è un gruppo, avvisa
     if (!m.isGroup) return m.reply(`『 ⚠️ 』 \`Questo menu funziona solo nei gruppi!\``)
 
-    // 🔥 LISTA FUNZIONI ALLINEATA AL TUO DATABASE 🔥
-    const securityFeatures = [
-        { id: 'welcome', name: '👋 Benvenuto' },
-        { id: 'goodbye', name: '🚪 Addio' },
-        { id: 'antiLink', name: '🔗 Anti-Link WA' },
-        { id: 'antiLinkUni', name: '🌍 Anti-Link Uni' },
-        { id: 'antiLink2', name: '🌐 Anti-Link Social' },
-        { id: 'antispam', name: '🛑 Anti-Spam' },
-        { id: 'antiparolacce', name: '🧼 Filtro Parolacce' },
-        { id: 'bestemmiometro', name: '🤬 Bestemmiometro' },
-        { id: 'antiporno', name: '🔞 Anti-Porno' },
-        { id: 'antigore', name: '🚫 Anti-Gore' },
-        { id: 'antiBot', name: '🤖 Anti-Bot' },
-        { id: 'antiBot2', name: '🤖 Anti-Subbots' },
-        { id: 'antitrava', name: '🧨 Anti-Trava' },
-        { id: 'antimedia', name: '🖼️ Anti-Media' },
-        { id: 'antioneview', name: '👁️‍🗨️ Anti-ViewOnce' },
-        { id: 'antitagall', name: '🏷️ Anti-TagAll' },
-        { id: 'antisondaggi', name: '📊 Anti-Sondaggi' },
-        { id: 'antivoip', name: '📞 Anti-Voip' },
-        { id: 'autotrascrizione', name: '📝 Auto-Trascrizione' },
-        { id: 'autotraduzione', name: '🌍 Auto-Traduzione' },
-        { id: 'modoadmin', name: '🛡️ Solo Admin' },
-        { id: 'rileva', name: '📡 Rileva Eventi' },
-        { id: 'ai', name: '🧠 Intelligenza Artif.' },
-        { id: 'vocali', name: '🎤 Risposte Vocali' },
-        { id: 'reaction', name: '😎 Auto-Reazioni' },
-        { id: 'autolevelup', name: '⬆️ Auto-LevelUp' }
-    ];
+    // 🔥 CATEGORIZZAZIONE FUNZIONI (Design Legam OS Compatto) 🔥
+    const categories = {
+        '🚨 𝐒𝐈𝐂𝐔𝐑𝐄𝐙𝐙𝐀 𝐄 𝐅𝐈𝐋𝐓𝐑𝐈': [
+            { id: 'antiLink', name: 'Anti-Link WA' },
+            { id: 'antiLinkUni', name: 'Anti-Link Uni' },
+            { id: 'antiLink2', name: 'Anti-Social' },
+            { id: 'antispam', name: 'Anti-Spam' },
+            { id: 'antiBot', name: 'Anti-Bot' },
+            { id: 'antiBot2', name: 'Anti-Subbots' },
+            { id: 'antitrava', name: 'Anti-Trava' },
+            { id: 'antimedia', name: 'Anti-Media' },
+            { id: 'antioneview', name: 'Anti-ViewOnce' },
+            { id: 'antitagall', name: 'Anti-TagAll' },
+            { id: 'antisondaggi', name: 'Anti-Sondaggi' },
+            { id: 'antivoip', name: 'Anti-Voip' },
+            { id: 'antiporno', name: 'Anti-Porno' },
+            { id: 'antigore', name: 'Anti-Gore' }
+        ],
+        '🗣️ 𝐌𝐎𝐃𝐄𝐑𝐀𝐙𝐈𝐎𝐍𝐄 & 𝐈𝐀': [
+            { id: 'antiparolacce', name: 'Filtro Parolacce' },
+            { id: 'bestemmiometro', name: 'Bestemmiometro' },
+            { id: 'autotrascrizione', name: 'Trascrizione' },
+            { id: 'autotraduzione', name: 'Traduzione' },
+            { id: 'ai', name: 'Intelligenza Art.' },
+            { id: 'vocali', name: 'Risposte Vocali' }
+        ],
+        '⚙️ 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐆𝐑𝐔𝐏𝐏𝐎': [
+            { id: 'welcome', name: 'Benvenuto' },
+            { id: 'goodbye', name: 'Addio' },
+            { id: 'modoadmin', name: 'Solo Admin' },
+            { id: 'rileva', name: 'Rileva Eventi' },
+            { id: 'reaction', name: 'Auto-Reazioni' },
+            { id: 'autolevelup', name: 'Auto-LevelUp' }
+        ]
+    };
 
-    // Creazione dinamica della lista con i pallini
-    let statusList = securityFeatures.map(f => {
-        let isAttivo = chat[f.id] ? '🟢' : '🔴'
-        let nomeComando = f.id.toLowerCase()
-        return `┃ ${isAttivo} ✦ *${f.name}* \n┃ ╰ ⌕ _(usa: ${usedPrefix}attiva ${nomeComando})_`
-    }).join('\n┃\n')
+    // Creazione del corpo del menu Categorizzato
+    let menuContent = '';
+    for (const [catName, features] of Object.entries(categories)) {
+        menuContent += `╭── ${catName} ──⬣\n`;
+        features.forEach(f => {
+            let isAttivo = chat[f.id] ? '🟢' : '🔴';
+            let cmd = f.id.toLowerCase();
+            // Stampa su una sola riga: 🟢 ✦ Nome ➭ `comando`
+            menuContent += `│ ${isAttivo} ✦ ${f.name} ➭ \`${cmd}\`\n`;
+        });
+        menuContent += `╰───────────────⬣\n\n`;
+    }
 
-    // Estetica Legam OS (Testo ultra-pulito e completo)
+    // Estetica Legam OS Finale
     let menuText = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 · 🛡️ 𝐌𝐄𝐍𝐔 𝐒𝐈𝐂𝐔𝐑𝐄𝐙𝐙𝐀 🛡️ ·
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 
-╭﹕₊˚ ★ ⁺˳ꕤ₊⁺・꒱
-│ ℹ️ *𝐂𝐎𝐌𝐄 𝐒𝐈 𝐔𝐒𝐀:*
-│ 🟢 ${usedPrefix}attiva [nome]
-│ 🔴 ${usedPrefix}disattiva [nome]
+╭﹕ℹ️ *𝐂𝐎𝐌𝐄 𝐒𝐈 𝐔𝐒𝐀:*
+│ 🟢 ${usedPrefix}attiva [comando]
+│ 🔴 ${usedPrefix}disattiva [comando]
 ╰﹕₊˚ ★ ⁺˳ꕤ₊⁺・꒱
 
-╭━━━━━━━━━━━━━━━━━━━━⬣
-${statusList}
-╰━━━━━━━━━━━━━━━━━━━━⬣
-
-╰♡꒷ ๑ ⋆˚₊⋆───ʚ˚ɞ───⋆˚₊⋆ ๑ ⪩
+${menuContent}╰♡꒷ ๑ ⋆˚₊⋆───ʚ˚ɞ───⋆˚₊⋆ ๑ ⪩
  ୧・👑 *𝐒𝐲𝐬𝐭𝐞𝐦:* Legam OS
  ୧・💎 *𝐀𝐝𝐦𝐢𝐧:* @${m.sender.split('@')[0]}
 ╰♡꒷ ๑ ⋆˚₊⋆───ʚ˚ɞ───⋆˚₊⋆ ๑ ⪩`.trim()
