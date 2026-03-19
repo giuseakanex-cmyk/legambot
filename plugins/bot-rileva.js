@@ -39,7 +39,7 @@ export async function before(m, { conn, groupMetadata }) {
       ppBuffer = Buffer.alloc(0);
     }
   }
-  const nomegp = groupMetadata.subject || 'vare ✧ bot';
+  const nomegp = groupMetadata.subject || 'giuse ✧ bot';
   const am = {
     21: 'NOME GRUPPO MODIFICATO',
     22: 'IMMAGINE GRUPPO MODIFICATA',
