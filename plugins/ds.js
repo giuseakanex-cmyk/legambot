@@ -1,7 +1,11 @@
 import fs from 'fs'
 import path from 'path'
 
-let handler = async (m, { conn, usedPrefix }) => {
+let handler = async (m, { conn, isOwner, isAdmin }) => {
+    // 🔥 Controllo Permessi Sicuro: In privato solo tu (Owner), nei gruppi Admin+Owner
+    if (!m.isGroup && !isOwner) return; 
+    if (m.isGroup && !isAdmin && !isOwner) return m.reply("『 🛑 』 `Comando riservato agli Admin e all'Owner.`");
+
     try {
         // Percorsi delle cartelle da pulire
         let sessionPath = './session/' 
@@ -32,26 +36,24 @@ let handler = async (m, { conn, usedPrefix }) => {
         let finalMsg = `🗑️ *𝗦𝗼𝗻𝗼 𝘀𝘁𝗮𝘁𝗶 𝗲𝗹𝗶𝗺𝗶𝗻𝗮𝘁𝗶 ${finalCount} 𝗮𝗿𝗰𝗵𝗶𝘃𝗶! 𝗚𝗿𝗮𝘇𝗶𝗲 𝗽𝗲𝗿 𝗮𝘃𝗲𝗿𝗺𝗶 𝘀𝘃𝘂𝗼𝘁𝗮𝘁𝗼 𝗹𝗲 𝗽𝗮𝗹𝗹𝗲 😉💦*`
 
         // ==========================================
-        // 🔥 FAKE QUOTE VIP CON SCRITTA PERSONALIZZATA 🔥
+        // 🔥 CONTESTO CANALE VIP (INFALLIBILE, ANTI-CRASH) 🔥
         // ==========================================
-        let fakeVerifiedQuote = {
-            key: {
-                fromMe: false,
-                participant: `0@s.whatsapp.net`, // Account ufficiale (spunta blu)
-                ...(m.chat ? { remoteJid: "status@broadcast" } : {}) // Anti-Crash
-            },
-            message: {
-                locationMessage: {
-                    name: '🗑️ 𝐒𝐯𝐮𝐨𝐭𝐚 𝐒𝐞𝐬𝐬𝐢𝐨𝐧𝐢', // <--- LA TUA SCRITTA VIP
-                    address: global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`, 
-                }
+        let channelContext = {
+            mentionedJid: [m.sender],
+            isForwarded: true,
+            forwardingScore: 999,
+            forwardedNewsletterMessageInfo: {
+                newsletterJid: '120363233544482011@newsletter', 
+                serverMessageId: 100,
+                newsletterName: '🗑️ 𝐒𝐯𝐮𝐨𝐭𝐚 𝐒𝐞𝐬𝐬𝐢𝐨𝐧𝐢' // <--- LA TUA SCRITTA VIP ESATTAMENTE QUI!
             }
-        }
+        };
 
-        // Invio del messaggio immediato, senza vecchi bottoni buggati
+        // Invio del messaggio immediato, impossibile da bloccare
         await conn.sendMessage(m.chat, {
-            text: finalMsg
-        }, { quoted: fakeVerifiedQuote })
+            text: finalMsg,
+            contextInfo: channelContext
+        }, { quoted: m })
         
     } catch (err) {
         console.error(err)
@@ -63,8 +65,9 @@ handler.help = ['ds', 'svuota']
 handler.tags = ['admin', 'owner']
 handler.command = /^(ds|clearcache|svuota)$/i
 
-// Permessi: Accessibile sia all'Owner che agli Admin del gruppo
-handler.admin = true 
+// Rimuoviamo i permessi automatici per gestirli manualmente sopra senza crash
+handler.admin = false 
+handler.owner = false
 
 export default handler
 
