@@ -12,6 +12,7 @@ const featureRegistry = [
   { key: 'antispam', store: 'chat', perm: PERM.ADMIN, aliases: [], name: '🛑 Antispam', desc: 'Antispam' },
   { key: 'antisondaggi', store: 'chat', perm: PERM.ADMIN, aliases: [], name: '📊🚫 Anti-sondaggi', desc: 'Blocca sondaggi (non-admin)' },
   { key: 'antiparolacce', store: 'chat', perm: PERM.ADMIN, aliases: ['antitossici'], name: '🧼 Filtro parolacce', desc: 'Rimuove per parolacce/insulti' },
+  { key: 'bestemmiometro', store: 'chat', perm: PERM.ADMIN, aliases: ['bestemmie', 'antibestemmie'], groupOnly: true, name: '🤬 Bestemmiometro', desc: 'Contatore bestemmie e avvisi' },
   { key: 'antiBot', store: 'chat', perm: PERM.ADMIN, aliases: ['antibot', 'antibots'], name: '🤖❌ Antibot', desc: 'Rimuove bot indesiderati' },
   { key: 'antiBot2', store: 'chat', perm: PERM.ADMIN, aliases: ['antisubbots', 'antisub'], name: '🤖🚫 Anti-subbots', desc: 'Blocca sub-bot' },
   { key: 'antitrava', store: 'chat', perm: PERM.ADMIN, aliases: [], name: '🧨❌ Antitrava', desc: 'Blocca messaggi trava' },
@@ -50,7 +51,8 @@ for (const feat of featureRegistry) {
   }
 }
 
-const adminkeyz = new Set(['welcome', 'goodbye', 'antispam', 'antisondaggi', 'antiparolacce', 'antiBot', 'antitrava', 'antimedia', 'antioneview', 'antitagall', 'autotrascrizione', 'autotraduzione', 'rileva', 'antiporno', 'antigore', 'modoadmin', 'ai', 'vocali', 'antivoip', 'antiLink', 'antiLinkUni', 'antiLink2', 'reaction', 'autolevelup']);
+// 🔥 AGGIUNTO 'bestemmiometro' ALLA LISTA ADMIN 🔥
+const adminkeyz = new Set(['welcome', 'goodbye', 'antispam', 'antisondaggi', 'antiparolacce', 'bestemmiometro', 'antiBot', 'antitrava', 'antimedia', 'antioneview', 'antitagall', 'autotrascrizione', 'autotraduzione', 'rileva', 'antiporno', 'antigore', 'modoadmin', 'ai', 'vocali', 'antivoip', 'antiLink', 'antiLinkUni', 'antiLink2', 'reaction', 'autolevelup']);
 const ownerkeyz = new Set(['antiprivato', 'soloCreatore', 'multiprefix', 'jadibotmd', 'antispambot', 'autoread', 'anticall', 'registrazioni']);
 
 const adminz = featureRegistry.filter(f => adminkeyz.has(f.key));
@@ -150,7 +152,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isS
     const ownerSections = createSections(ownerz);
 
     const adminCard = {
-      image: { url: 'https://files.catbox.moe/pyp87f.jpg' }, // <--- FIX: Immagine riparata!
+      image: { url: 'https://files.catbox.moe/pyp87f.jpg' }, 
       title: '『 👥 𝐒𝐄𝐓𝐓𝐈𝐍𝐆𝐒 𝐀𝐃𝐌𝐈𝐍 』',
       body: '✧ _Gestisci le funzioni di sicurezza e intrattenimento del gruppo._',
       footer: '*─ׄ✦☾⋆⁺₊✧ 𝐆𝐈𝐔𝐒𝐄𝐁𝐎𝐓 ✧₊⁺⋆☽✦─ׅ⭒*',
@@ -160,7 +162,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isS
     let cards = [adminCard];
     if (isOwner || isSam) {
       cards.push({
-        image: { url: 'https://files.catbox.moe/pyp87f.jpg' }, // <--- FIX: Immagine riparata per sicurezza!
+        image: { url: 'https://files.catbox.moe/pyp87f.jpg' }, 
         title: '『 👑 𝐒𝐄𝐓𝐓𝐈𝐍𝐆𝐒 𝐎𝐖𝐍𝐄𝐑 』',
         body: '✧ _Gestisci il core e i limiti globali del bot._',
         footer: '*─ׄ✦☾⋆⁺₊✧ 𝐆𝐈𝐔𝐒𝐄𝐁𝐎𝐓 ✧₊⁺⋆☽✦─ׅ⭒*',
@@ -229,6 +231,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isS
 
 handler.help = ['attiva', 'disattiva'];
 handler.tags = ['main'];
-handler.command = ['enable', 'disable', 'attiva', 'disattiva']; // <--- FIX: Rimosso 'on' e 'off' !
+handler.command = ['enable', 'disable', 'attiva', 'disattiva']; 
 
 export default handler;
+
