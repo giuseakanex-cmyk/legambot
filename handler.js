@@ -86,7 +86,7 @@ function initResponseHandler(conn) {
 global.processedCalls = global.processedCalls || new Map()
 
 // ==========================================
-// LEGAM OS - BENVENUTO E ADDIO (MINIATURA QUADRATA VIP)
+// LEGAM OS - BENVENUTO E ADDIO (MINIATURA INFALLIBILE VIP)
 // ==========================================
 export async function participantsUpdate({ id, participants, action }) {
     try {
@@ -95,7 +95,6 @@ export async function participantsUpdate({ id, participants, action }) {
         global.processedWelcome.add(eventKey);
         setTimeout(() => global.processedWelcome.delete(eventKey), 10000);
 
-        // Funziona ESCLUSIVAMENTE per entrate e uscite
         if (action !== 'add' && action !== 'remove') return;
 
         console.log(chalk.bgHex('#3b0d95').white.bold(' LEGAM OS ') + chalk.yellow(` 🚨 Azione attivata: ${action} in ${id.split('@')[0]}`));
@@ -105,7 +104,6 @@ export async function participantsUpdate({ id, participants, action }) {
         let chat = global.db.data.chats[id] || {};
         let nomeDelBot = global.db.data.nomedelbot || `𝐿𝛴𝐺𝛬𝑀 𝛩𝑆 𝚩𝚯𝐓`;
 
-        // Se il welcome è spento nel db, si ferma
         if (!chat.welcome) return;
 
         let groupMetadata = global.groupCache.get(id) || await this.groupMetadata(id).catch(_ => null) || {};
@@ -114,18 +112,12 @@ export async function participantsUpdate({ id, participants, action }) {
 
         for (let user of participants) {
             
-            // Scarichiamo la foto profilo dell'utente che entra/esce
-            let pp = 'https://files.catbox.moe/57bmbv.jpg'; // Immagine di fallback
-            try { pp = await this.profilePictureUrl(user, 'image'); } catch (e) {}
-
-            // Prepara il buffer dell'immagine per WhatsApp
-            let apii = { data: '' };
-            try { apii = await this.getFile(pp); } catch (e) {}
+            // 🔥 TRUCCO ANTI-CRASH: URL diretto per la miniatura quadrata infallibile
+            let pp = await this.profilePictureUrl(user, 'image').catch(_ => 'https://files.catbox.moe/57bmbv.jpg');
 
             let cleanUser = user.split('@')[0];
             let text = '';
 
-            // Applicazione delle variabili per Add e Remove
             if (action === 'add') {
                 let customWelcome = chat.sWelcome || `「  *BENVENUTO* 」\n𝗔𝗼 𝗮𝘁𝘁𝗲𝗻𝘁𝗼 𝗰𝗵𝗲 𝗾𝘂𝗮 𝗱𝗲𝗻𝘁𝗿𝗼 𝗳𝗮𝗻𝗻𝗼 𝗮 𝗯𝗮𝗹𝗱𝗼𝗿𝗶𝗮 𝗳𝗿𝗮𝘁è\n👤 *Utente:* @user\n🎉 *Gruppo:* @group`;
                 text = customWelcome.replace(/@user/g, `@${cleanUser}`).replace(/@group/g, groupName).replace(/@desc/g, groupDesc);
@@ -143,25 +135,22 @@ export async function participantsUpdate({ id, participants, action }) {
                     contextInfo: {
                         mentionedJid: [user],
                         isForwarded: true,
-                        // Finto canale Inoltrato in alto
                         forwardedNewsletterMessageInfo: {
                             newsletterJid: '120363233544482011@newsletter',
                             serverMessageId: 100,
                             newsletterName: nomeDelBot
                         },
-                        // 🔥 LA MAGIA DELLA MINIATURA (Uguale sia per Benvenuto che Addio) 🔥
                         externalAdReply: {
                             title: action === 'add' ? '𝐁𝐄𝐍𝐕𝐄𝐍𝐔𝐓𝐎 👑' : '𝐀𝐃𝐃𝐈𝐎 👋🏻',
                             body: 'Legam OS System',
-                            mediaType: 1, // Layout piccolo quadrato
-                            renderLargerThumbnail: false, // Disattiva l'immagine gigante
+                            mediaType: 1, 
+                            renderLargerThumbnail: false,
                             thumbnailUrl: pp,
-                            thumbnail: apii.data || Buffer.alloc(0)
+                            sourceUrl: 'https://whatsapp.com/channel/0029VaE20oQ6hENrL2B5wB0e' // OBBLIGATORIO PER NON FAR CRASHARE WHATSAPP
                         }
                     }
                 }); 
                 
-                console.log(chalk.green(`[✓] Messaggio con Miniatura VIP (${action}) inviato con successo!`));
             } catch (err) {
                 console.error(chalk.red("[X] Errore invio Welcome/Goodbye:"), err);
             }
@@ -200,7 +189,6 @@ export async function handler(chatUpdate) {
         if (actionTrigger) {
             let who = m.messageStubParameters[0];
             if (who) {
-                console.log(chalk.cyan(`[!] Intercettato StubType ${m.messageStubType}. Inoltro al motore grafico...`));
                 participantsUpdate.call(this, {
                     id: m.chat,
                     participants: [who],
@@ -209,7 +197,6 @@ export async function handler(chatUpdate) {
             }
         }
     }
-    // ==================================================
     
     if (m.key.participant && m.key.participant.includes(':') && m.key.participant.split(':')[1]?.includes('@')) return
 
@@ -276,7 +263,6 @@ export async function handler(chatUpdate) {
         
         let groupMetadata = m.isGroup ? global.groupCache.get(m.chat) : null
         let participants = null
-        let normalizedParticipants = null
         let isBotAdmin = false
         let isAdmin = false
         
@@ -302,11 +288,6 @@ export async function handler(chatUpdate) {
             }
             if (groupMetadata) {
                 participants = groupMetadata.participants
-                normalizedParticipants = participants.map(u => {
-                    const normalizedId = this.decodeJid(u.id)
-                    return { ...u, id: normalizedId, jid: u.jid || normalizedId }
-                })
-                
                 isAdmin = participants.some(u => {
                     const participantIds = [this.decodeJid(u.id), u.jid ? this.decodeJid(u.jid) : null, u.lid ? this.decodeJid(u.lid) : null].filter(Boolean)
                     return participantIds.includes(normalizedSender) && (u.admin === 'admin' || u.admin === 'superadmin' || u.isAdmin === true || u.admin === true)
@@ -351,6 +332,23 @@ export async function handler(chatUpdate) {
         // ==========================================
 
         const ___dirname = join(path.dirname(fileURLToPath(import.meta.url)), './plugins')
+        
+        // 🔥 FIX LEGAM OS: MOTORE DEGLI INTERCETTATORI (plugin.before) 🔥
+        // Questo ciclo mancava! E' quello che fa funzionare il Muto, cancellando i messaggi.
+        for (let name in global.plugins) {
+            let plugin = global.plugins[name]
+            if (!plugin) continue
+            if (typeof plugin.before === 'function') {
+                try {
+                    await plugin.before.call(this, m, {
+                        conn: this, participants, isGiuse, isOwner, isMods, isAdmin, isBotAdmin, isPrems 
+                    })
+                } catch (e) {
+                    console.error(`[ERRORE INTERCETTATORE] Plugin ${name}:`, e)
+                }
+            }
+        }
+
         for (let name in global.plugins) {
             let plugin = global.plugins[name]
             if (!plugin) continue
@@ -411,9 +409,19 @@ export async function handler(chatUpdate) {
                     continue;
                 }
 
+                // Controllo muto vecchio database
                 if (user.muto && !isROwner && !isOwner) {
                     await this.sendMessage(m.chat, { text: `🚫 Non puoi usare i comandi se sei stato mutato!` }, { quoted: m });
                     continue; 
+                }
+
+                // 🔥 PONTE LEGAM OS: Controllo muto nuovo RAM (collegato a muta.js) 🔥
+                if (global.gpMutaSmuta && global.gpMutaSmuta.mutedUsers) {
+                    let normId = global.gpMutaSmuta.normalizeId(this.decodeJid(m.sender));
+                    if (global.gpMutaSmuta.mutedUsers.has(normId) && !isROwner && !isOwner) {
+                        // Salta il comando silenziosamente, l'intercettatore prima ha già cancellato il messaggio
+                        continue;
+                    }
                 }
 
                 if (m.isGroup && !isOwner && !isROwner && !isAdmin && !isMods && chat.antispam) {
