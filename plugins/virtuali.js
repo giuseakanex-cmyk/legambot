@@ -8,7 +8,20 @@ function formatNumber(num) {
     return new Intl.NumberFormat('it-IT').format(num)
 }
 
-// Funzione di sicurezza per rimborsare in caso di crash
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// 🔥 SCUDO ANTI-SPAM WHATSAPP 🔥
+const legamContext = (title) => ({
+    isForwarded: true,
+    forwardingScore: 999,
+    forwardedNewsletterMessageInfo: {
+        newsletterJid: '120363233544482011@newsletter',
+        serverMessageId: 100,
+        newsletterName: `⚽ ${title}`
+    }
+});
+
+// Funzione di sicurezza per rimborsare in caso di crash server
 function refundBets(match) {
     if (!match || !match.bets) return;
     for (let b of match.bets) {
@@ -78,15 +91,12 @@ function calcolaQuote(sq1, sq2) {
 let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
     let chatId = m.chat
 
-    // Comando segreto per killare i Fantasmi
     if (command === 'resetmatch' && isOwner) {
         if (global.virtualMatches[chatId]) {
             refundBets(global.virtualMatches[chatId]);
             delete global.virtualMatches[chatId];
-            return m.reply(`『 👻 』 \`Fantasma esorcizzato! Partita resettata e puntate rimborsate.\``);
-        } else {
-            return m.reply(`『 💡 』 \`Nessun match bloccato in questa chat.\``);
-        }
+            return m.reply(`『 👻 』 \`Fantasma esorcizzato! Partita resettata.\``);
+        } else return m.reply(`『 💡 』 \`Nessun match bloccato.\``);
     }
 
     if (command === 'virtuali') {
@@ -122,8 +132,8 @@ let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
 · [ 𝐎𝐕𝐄𝐑 ] Più di 2 Goal ➻ *${quoteMatch['OVER'].toFixed(2)}x*
 · [ 𝐔𝐍𝐃𝐄𝐑 ] Max 2 Goal ➻ *${quoteMatch['UNDER'].toFixed(2)}x*
 
-│ 💡 Usa: *${usedPrefix}punta [Esito] [Euro]*
-│ 𝐄𝐬𝐞𝐦𝐩𝐢𝐨: *${usedPrefix}punta 1 500*
+│ 💡 Usa: *${usedPrefix}bet [Esito] [Euro]*
+│ 𝐄𝐬𝐞𝐦𝐩𝐢𝐨: *${usedPrefix}bet 1 500*
 
 👑 𝐎𝐖𝐍𝐄𝐑 ➤ 𝐆𝐈𝐔𝐒𝚵
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
@@ -132,28 +142,10 @@ let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
             await conn.sendMessage(chatId, {
                 image: { url: VIRTUALI_IMAGE_URL },
                 caption: msg,
-                contextInfo: {
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363233544482011@newsletter',
-                        newsletterName: "🎰 𝐋𝐞𝐠𝐚𝐦 𝐎𝐒 𝐁𝐞𝐭𝐭𝐢𝐧𝐠",
-                        serverMessageId: 100
-                    }
-                }
+                contextInfo: legamContext('Match Ufficiale')
             })
         } catch (imgError) {
-            console.log("[LEGAM OS] Immagine non valida o server giù. Anti-crash attivo.");
-            await conn.sendMessage(chatId, {
-                text: msg,
-                contextInfo: {
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363233544482011@newsletter',
-                        newsletterName: "🎰 𝐋𝐞𝐠𝐚𝐦 𝐎𝐒 𝐁𝐞𝐭𝐭𝐢𝐧𝐠",
-                        serverMessageId: 100
-                    }
-                }
-            })
+            await conn.sendMessage(chatId, { text: msg, contextInfo: legamContext('Match Ufficiale') })
         }
 
         global.virtualMatches[chatId].timer = setTimeout(async () => {
@@ -162,13 +154,13 @@ let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
         return
     }
 
-    if (command === 'punta' || command === 'bet') {
+    if (command === 'bet' || command === 'punta') {
         let match = global.virtualMatches[chatId]
         if (!match) return m.reply(`『 ⚠️ 』 \`Nessun match attivo. Usa ${usedPrefix}virtuali\``)
         if (match.state !== 'betting') return m.reply(`『 🛑 』 \`Botteghino chiuso! Partita iniziata.\``)
 
         let user = global.db.data.users[m.sender]
-        if (!args[0] || !args[1]) return m.reply(`👉 Usa: *${usedPrefix}punta [ESITO] [EURO]*`)
+        if (!args[0] || !args[1]) return m.reply(`👉 Usa: *${usedPrefix}bet [ESITO] [EURO]*`)
         
         let scommessa = args[0].toUpperCase()
         let puntata = parseInt(args[1])
@@ -204,7 +196,7 @@ let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
 
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
 
-        await conn.sendMessage(chatId, { text: ricevuta, mentions: [m.sender] }, { quoted: m })
+        await conn.sendMessage(chatId, { text: ricevuta, mentions: [m.sender], contextInfo: legamContext('Ticket Registrato') }, { quoted: m })
     }
 }
 
@@ -214,7 +206,10 @@ async function avviaPartita(conn, chatId) {
     match.state = 'playing'
 
     try {
-        await conn.sendMessage(chatId, { text: `『 🚨 』 \`BOTTEGHINO CHIUSO!\`\n\n🏟️ Le squadre scendono in campo. FISCHIO D'INIZIO! ⚽` }).catch(()=>{})
+        await conn.sendMessage(chatId, { 
+            text: `『 🚨 』 \`BOTTEGHINO CHIUSO!\`\n\n🏟️ Le squadre scendono in campo. FISCHIO D'INIZIO! ⚽`,
+            contextInfo: legamContext('Inizio Match')
+        })
 
         let eventsCount = Math.floor(Math.random() * 3) + 4
         let minutiAzione = []
@@ -226,7 +221,7 @@ async function avviaPartita(conn, chatId) {
         let totalR = r1 + r2;
 
         for (let i = 0; i < eventsCount; i++) {
-            await new Promise(resolve => setTimeout(resolve, 6000)) 
+            await delay(6000); // 6 secondi tra un'azione e l'altra
             
             let isTeam1 = Math.random() < (r1 / totalR) 
             let attackingTeam = isTeam1 ? match.sq1 : match.sq2
@@ -244,13 +239,14 @@ async function avviaPartita(conn, chatId) {
                     `che salta netto l'ultimo difensore e deposita in rete!`,
                     `che approfitta di una dormita clamorosa della difesa e non perdona!`
                 ]
-                msg = `⚽ 𝐆𝐎𝐎𝐎𝐀𝐀𝐀𝐋 𝐏𝐄𝐑 𝐈𝐋 ${attackingTeam.toUpperCase()}!!!\nRete di *${player}* ${stiliGol[Math.floor(Math.random()*stiliGol.length)]}\n\n📊 *${match.sq1} [ ${match.score1} - ${match.score2} ] ${match.sq2}*`
-                await conn.sendMessage(chatId, { text: `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n${msg}` }).catch(()=>{})
+                msg = `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n⚽ 𝐆𝐎𝐎𝐎𝐀𝐀𝐀𝐋 𝐏𝐄𝐑 𝐈𝐋 ${attackingTeam.toUpperCase()}!!!\nRete di *${player}* ${stiliGol[Math.floor(Math.random()*stiliGol.length)]}\n\n📊 *${match.sq1} [ ${match.score1} - ${match.score2} ] ${match.sq2}*`
+                await conn.sendMessage(chatId, { text: msg, contextInfo: legamContext('Cronaca Diretta') })
             } 
             else if (actionType < 0.60) {
-                let msgVar = `📺 𝐀𝐓𝐓𝐄𝐍𝐙𝐈𝐎𝐍𝐄 𝐀𝐋 𝐕𝐀𝐑!\nCheck per un possibile fallo su *${player}* nell'area del ${defendingTeam}...`
-                await conn.sendMessage(chatId, { text: `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n${msgVar}` }).catch(()=>{})
-                await new Promise(resolve => setTimeout(resolve, 7000)) 
+                let msgVar = `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n📺 𝐀𝐓𝐓𝐄𝐍𝐙𝐈𝐎𝐍𝐄 𝐀𝐋 𝐕𝐀𝐑!\nCheck per un possibile fallo su *${player}* nell'area del ${defendingTeam}...`
+                await conn.sendMessage(chatId, { text: msgVar, contextInfo: legamContext('Cronaca Diretta') })
+                
+                await delay(5000); 
                 
                 if (Math.random() > 0.5) {
                     if (isTeam1) match.score1++; else match.score2++;
@@ -258,25 +254,25 @@ async function avviaPartita(conn, chatId) {
                 } else {
                     msg = `❌ 𝐃𝐄𝐂𝐈𝐒𝐈𝐎𝐍𝐄 𝐕𝐀𝐑: 𝐍𝐈𝐄𝐍𝐓𝐄 𝐑𝐈𝐆𝐎𝐑𝐄!\nSi continua a giocare, palla al ${defendingTeam}.`
                 }
-                await conn.sendMessage(chatId, { text: msg }).catch(()=>{})
+                await conn.sendMessage(chatId, { text: msg, contextInfo: legamContext('Cronaca Diretta') })
             }
             else if (actionType < 0.80) {
-                msg = `😱 𝐌𝐈𝐑𝐀𝐂𝐎𝐋𝐎 𝐃𝐄𝐋 𝐏𝐎𝐑𝐓𝐈𝐄𝐑𝐄!\n*${player}* calcia a botta sicura, ma l'estremo difensore del ${defendingTeam} fa una parata pazzesca!`
-                await conn.sendMessage(chatId, { text: `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n${msg}` }).catch(()=>{})
+                msg = `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n😱 𝐌𝐈𝐑𝐀𝐂𝐎𝐋𝐎 𝐃𝐄𝐋 𝐏𝐎𝐑𝐓𝐈𝐄𝐑𝐄!\n*${player}* calcia a botta sicura, ma l'estremo difensore del ${defendingTeam} fa una parata pazzesca!`
+                await conn.sendMessage(chatId, { text: msg, contextInfo: legamContext('Cronaca Diretta') })
             } else {
                 let defPlayer = getPlayer(defendingTeam)
-                msg = `🟨 *𝐂𝐀𝐑𝐓𝐄𝐋𝐋𝐈𝐍𝐎 𝐆𝐈𝐀𝐋𝐋𝐎!*\nIntervento in ritardo di *${defPlayer}* (${defendingTeam}) per fermare il contropiede di ${player}.`
-                await conn.sendMessage(chatId, { text: `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n${msg}` }).catch(()=>{})
+                msg = `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n🟨 *𝐂𝐀𝐑𝐓𝐄𝐋𝐋𝐈𝐍𝐎 𝐆𝐈𝐀𝐋𝐋𝐎!*\nIntervento in ritardo di *${defPlayer}* (${defendingTeam}) per fermare il contropiede di ${player}.`
+                await conn.sendMessage(chatId, { text: msg, contextInfo: legamContext('Cronaca Diretta') })
             }
         }
 
-        await new Promise(resolve => setTimeout(resolve, 5000))
+        await delay(5000);
         await finalizeGame(conn, chatId, match)
 
     } catch (err) {
         console.error("[VIRTUALI] Errore critico in avviaPartita:", err)
         refundBets(match)
-        await conn.sendMessage(chatId, { text: `『 ❌ 』 \`Errore sul campo (connessione persa). Partita annullata e puntate rimborsate in automatico.\`` }).catch(()=>{})
+        await conn.sendMessage(chatId, { text: `『 ❌ 』 \`Errore tecnico. Partita annullata e puntate rimborsate.\`` })
         delete global.virtualMatches[chatId]
     }
 }
@@ -334,26 +330,18 @@ async function finalizeGame(conn, chatId, match) {
         await conn.sendMessage(chatId, { 
             text: finale.trim(), 
             mentions: scommettitori,
-            contextInfo: {
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363233544482011@newsletter',
-                    newsletterName: "⚽ 𝐋𝐞𝐠𝐚𝐦 𝐎𝐒 𝐑𝐞𝐬𝐮𝐥𝐭𝐬",
-                    serverMessageId: 100
-                }
-            }
+            contextInfo: legamContext('Risultati Finali')
         })
     } catch (e) {
         console.error("[VIRTUALI] Errore nel finalizeGame:", e)
         refundBets(match)
-        await conn.sendMessage(chatId, { text: `『 ❌ 』 \`Errore tecnico nell'assegnazione delle vincite. Le puntate sono state rimborsate.\`` }).catch(()=>{})
+        await conn.sendMessage(chatId, { text: `『 ❌ 』 \`Errore tecnico. Le puntate sono state rimborsate.\`` })
     } finally {
-        // 🔥 LA MAGIA: IL FANTASMA MUORE QUI, QUALSIASI COSA SUCCEDA 🔥
-        delete global.virtualMatches[chatId]
+        delete global.virtualMatches[chatId] // Libera la chat per una nuova partita
     }
 }
 
-handler.command = ['virtuali', 'punta', 'bet', 'resetmatch']
+handler.command = ['virtuali', 'bet', 'punta', 'resetmatch']
 handler.group = true
 export default handler
 
