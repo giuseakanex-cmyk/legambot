@@ -16,7 +16,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
 『 🌐 』 𝐒 𝐎 𝐂 𝐈 𝐀 𝐋
 · 𝐈𝐧𝐬𝐭𝐚𝐠𝐫𝐚𝐦 ➻ @giuse0_9
-· 𝐏𝐫𝐨𝐟𝐢𝐥𝐨 ➻ ${ownerInstagram}
+· 𝐏𝐫𝐨𝐟𝐢𝐥𝐨 ➻ ${global.insta}
 
 『 ⚙️ 』 𝐒 𝐓 𝐀 𝐓 𝐔 𝐒
 · 𝐃𝐢𝐬𝐩𝐨𝐧𝐢𝐛𝐢𝐥𝐢𝐭𝐚̀ ➻ 𝐎𝐧𝐥𝐢𝐧𝐞
