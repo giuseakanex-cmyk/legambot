@@ -59,25 +59,23 @@ let handler = async (m, { conn, command, args, participants }) => {
 
     if (isList) {
         if (!mutedUsers.size) {
-            return m.reply(`✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 📭 𝐋𝐈𝐒𝐓𝐀 𝐌𝐔𝐓𝐀𝐓𝐈 📭 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 🛡️ 』 _Nessun utente è attualmente mutato._\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`)
+            return m.reply(`ㅤㅤ⋆｡˚『 ╭ \`LISTA MUTATI\` ╯ 』˚｡⋆\n╭\n│ 『 📭 』 \`stato:\` *Nessun utente mutato*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`)
         }
         
-        let text = `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 📭 𝐋𝐈𝐒𝐓𝐀 𝐌𝐔𝐓𝐀𝐓𝐈 📭 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n`
+        let text = `ㅤㅤ⋆｡˚『 ╭ \`LISTA MUTATI\` ╯ 』˚｡⋆\n╭\n`
         let mentions = []
         for (let [normalized, data] of mutedUsers.entries()) {
             let timeLeft = formatTimeLeft(data.timestamp)
+            // Try to get current name, fallback to stored displayNumber
             let userJid = data.displayNumber.startsWith('39') && data.displayNumber.length === 12 ?
                 data.displayNumber + '@s.whatsapp.net' :
                 data.displayNumber + '@lid'
             let currentName = getUserName(userJid, participants) || data.displayNumber
-            
-            text += `│ 🔇 @${currentName}\n`
-            text += `│ ⏱️ 𝐒𝐜𝐚𝐝𝐞𝐧𝐳𝐚: ${timeLeft}\n`
-            text += `│ 📝 𝐌𝐨𝐭𝐢𝐯𝐨: _${data.reason}_\n`
-            text += `╰───────────────⬣\n`
+            text += `│ 『 🔇 』 @${currentName} - ${timeLeft}\n`
+            text += `│ 『 📝 』 \`motivo:\` *${data.reason}*\n`
             mentions.push(userJid)
         }
-        text += `\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`
+        text += `*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`
         return conn.sendMessage(m.chat, { 
             text, 
             mentions,
@@ -95,7 +93,7 @@ let handler = async (m, { conn, command, args, participants }) => {
     }
 
     if (!users.length) {
-        return m.reply(`✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· ⚠️ 𝐄𝐑𝐑𝐎𝐑𝐄 ⚠️ ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 ❌ 』 𝐅𝐨𝐫𝐦𝐚𝐭𝐨: *${command} @user [minuti] [motivo]*\n『 💡 』 𝐎𝐩𝐩𝐮𝐫𝐞: _rispondi a un messaggio_\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`)
+        return m.reply(`ㅤㅤ⋆｡˚『 ╭ \`USO COMANDO\` ╯ 』˚｡⋆\n╭\n│ 『 ❌』 \`formato:\` *${command} @user [minuti] [motivo]*\n│ 『 💡 』 \`oppure:\` *rispondi a un messaggio*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`)
     }
 
     const validUsers = []
@@ -142,7 +140,7 @@ let handler = async (m, { conn, command, args, participants }) => {
     users = validUsers
 
     if (!users.length) {
-        return m.reply(`✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· ⚠️ 𝐄𝐑𝐑𝐎𝐑𝐄 ⚠️ ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 ❌ 』 𝐒𝐭𝐚𝐭𝐨: _Utente non valido o non nel gruppo_\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`)
+        return m.reply(`ㅤㅤ⋆｡˚『 ╭ \`ERRORE\` ╯ 』˚｡⋆\n╭\n│ 『 ❌ 』 \`stato:\` *Utente non valido o non nel gruppo*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`)
     }
     
     let time = 0
@@ -186,15 +184,15 @@ let handler = async (m, { conn, command, args, participants }) => {
                 lastNotification: 0,
                 displayNumber: conn.decodeJid(m.sender).split('@')[0]
             })
-            return m.reply(`✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· ⚡ 𝐏𝐔𝐍𝐈𝐙𝐈𝐎𝐍𝐄 ⚡ ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 👑 』 𝐄𝐫𝐫𝐨𝐫𝐞: _Non puoi mutare un Owner_\n『 🔇 』 𝐂𝐨𝐧𝐬𝐞𝐠𝐮𝐞𝐧𝐳𝐚: *Sei mutato per 2 minuti!*\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`)
+            return m.reply(`ㅤㅤ⋆｡˚『 ╭ \`PUNIZIONE\` ╯ 』˚｡⋆\n╭\n│ 『 👊 』 \`errore:\` *Non puoi mutare un owner*\n│ 『 🔇 』 \`punizione:\` *Sei mutato per 2 minuti*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`)
         }
 
         if (isOwner && isUnmute) {
-            return m.reply(`✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· ⚠️ 𝐄𝐑𝐑𝐎𝐑𝐄 ⚠️ ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 ❌ 』 𝐒𝐭𝐚𝐭𝐨: _Un Owner non può essere mutato_\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`)
+            return m.reply(`ㅤㅤ⋆｡˚『 ╭ \`ERRORE\` ╯ 』˚｡⋆\n╭\n│ 『 ❌ 』 \`stato:\` *Un owner non può essere mutato*\n│ 『 💡 』 \`info:\` *Operazione non necessaria*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`)
         }
 
         if (jid === conn.user.jid) {
-            return m.reply(`✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· ⚠️ 𝐄𝐑𝐑𝐎𝐑𝐄 ⚠️ ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 🤖 』 𝐀𝐳𝐢𝐨𝐧𝐞: _Non puoi ${command}re il bot_\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`)
+            return m.reply(`ㅤㅤ⋆｡˚『 ╭ \`ERRORE\` ╯ 』˚｡⋆\n╭\n│ 『 ❌ 』 \`azione:\` *Non puoi ${command}re il bot*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`)
         }
 
         if (isMute) {
@@ -215,7 +213,7 @@ let handler = async (m, { conn, command, args, participants }) => {
             if (found) {
                 results.push(`@${displayNumber}`);
             } else if (users.length === 1) {
-                return m.reply(`✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 💡 𝐈𝐍𝐅𝐎 💡 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 💡 』 𝐒𝐭𝐚𝐭𝐨: _@${displayNumber} non è mutato_\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`);
+                return m.reply(`ㅤㅤ⋆｡˚『 ╭ \`INFO\` ╯ 』˚｡⋆\n╭\n│ 『 💡 』 \`stato:\` *@${displayNumber} non è mutato*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`);
             }
         }
     }
@@ -224,14 +222,14 @@ let handler = async (m, { conn, command, args, participants }) => {
     const userName = getUserName(targetUser, participants)
     const userPp = await getUserProfilePic(conn, targetUser)
 
-    let msg = `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 🛡️ ${isMute ? '𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐌𝐔𝐓𝐄' : '𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐒𝐌𝐔𝐓𝐄'} 🛡️ ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n`
-    msg += `『 👤 』 𝐔𝐭𝐞𝐧𝐭𝐢: *${results.join(', ')}*\n`
-    msg += `『 ⚡ 』 𝐀𝐳𝐢𝐨𝐧𝐞: *${isMute ? 'Mutato' : 'Smutato'}*\n`
+    let msg = `ㅤㅤ⋆｡˚『 ╭ \`AZIONE COMPLETATA\` ╯ 』˚｡⋆\n╭\n`
+    msg += `│ 『 👤 』 \`utenti:\` *${results.join(', ')}*\n`
+    msg += `│ 『 ⚡ 』 \`azione:\` *${isMute ? 'mutato' : 'smutato'}*\n`
     if (isMute) {
-        msg += time ? `『 ⏱️ 』 𝐃𝐮𝐫𝐚𝐭𝐚: *${time / 60000} minuti*\n` : `『 ⏱️ 』 𝐃𝐮𝐫𝐚𝐭𝐚: *∞ Permanente*\n`
+        msg += time ? `│ 『 ⏱️ 』 \`durata:\` *${time / 60000} minuti*\n` : `│ 『 ⏱️ 』 \`durata:\` *∞ Permanente*\n`
     }
-    msg += `『 📝 』 𝐌𝐨𝐭𝐢𝐯𝐨: _${reason}_\n\n👑 _Azione eseguita dall'Amministrazione._\n`
-    msg += `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`
+    msg += `│ 『 📝 』 \`motivo:\` *${reason}*\n`
+    msg += `*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`
 
     await conn.sendMessage(m.chat, {
         text: msg,
@@ -279,7 +277,7 @@ handler.before = async (m, { conn, isCommand }) => {
         const userPp = await getUserProfilePic(conn, m.sender)
         
         await conn.sendMessage(m.chat, {
-            text: `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 🔓 𝐌𝐔𝐓𝐄 𝐒𝐂𝐀𝐃𝐔𝐓𝐎 🔓 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 ✅ 』 𝐔𝐭𝐞𝐧𝐭𝐞: *@${m.sender.split('@')[0]}*\n『 🔊 』 𝐒𝐭𝐚𝐭𝐨: _Smutato automaticamente_\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`,
+            text: `ㅤㅤ⋆｡˚『 ╭ \`MUTE SCADUTO\` ╯ 』˚｡⋆\n╭\n│ 『 ✅ 』 \`utente:\` *@${m.sender.split('@')[0]}*\n│ 『 🔓 』 \`stato:\` *smutato automaticamente*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`,
             mentions: [m.sender],
             contextInfo: {
                 ...global.fake.contextInfo,
@@ -320,7 +318,7 @@ handler.before = async (m, { conn, isCommand }) => {
         const userPp = await getUserProfilePic(conn, m.sender)
         
         await conn.sendMessage(m.chat, {
-            text: `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· ⚠️ 𝐀𝐕𝐕𝐄𝐑𝐓𝐈𝐌𝐄𝐍𝐓𝐎 ⚠️ ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 👤 』 𝐔𝐭𝐞𝐧𝐭𝐞: *@${m.sender.split('@')[0]}*\n『 🚫 』 𝐏𝐫𝐨𝐛𝐥𝐞𝐦𝐚: _Spam mentre mutato_\n『 ⚡ 』 𝐑𝐢𝐬𝐜𝐡𝐢𝐨: _Rimozione dal gruppo_\n『 📊 』 𝐌𝐞𝐬𝐬𝐚𝐠𝐠𝐢: *${userWarnings.count}/7*\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`,
+            text: `ㅤㅤ⋆｡˚『 ╭ \`AVVERTIMENTO\` ╯ 』˚｡⋆\n╭\n│ 『 ⚠️ 』 \`utente:\` *@${m.sender.split('@')[0]}*\n│ 『 🚫 』 \`problema:\` *Spam mentre mutato*\n│ 『 ⚡ 』 \`rischio:\` *Rimozione dal gruppo*\n│ 『 📊 』 \`messaggi:\` *${userWarnings.count}/7*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`,
             mentions: [m.sender],
             contextInfo: {
                 ...global.fake.contextInfo,
@@ -344,7 +342,7 @@ handler.before = async (m, { conn, isCommand }) => {
         
         try {
             await conn.sendMessage(m.chat, {
-                text: `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 🔨 𝐔𝐓𝐄𝐍𝐓𝐄 𝐑𝐈𝐌𝐎𝐒𝐒𝐎 🔨 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 👤 』 𝐔𝐭𝐞𝐧𝐭𝐞: *@${m.sender.split('@')[0]}*\n『 ⚡ 』 𝐌𝐨𝐭𝐢𝐯𝐨: _Spam eccessivo mentre mutato_\n『 📊 』 𝐌𝐞𝐬𝐬𝐚𝐠𝐠𝐢: *${userWarnings.count} in poco tempo*\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`,
+                text: `ㅤㅤ⋆｡˚『 ╭ \`UTENTE RIMOSSO\` ╯ 』˚｡⋆\n╭\n│ 『 🚫 』 \`utente:\` *@${m.sender.split('@')[0]}*\n│ 『 ⚡ 』 \`motivo:\` *Spam eccessivo mentre mutato*\n│ 『 📊 』 \`messaggi:\` *${userWarnings.count} in poco tempo*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`,
                 mentions: [m.sender],
                 contextInfo: {
                     ...global.fake.contextInfo,
@@ -381,7 +379,7 @@ handler.before = async (m, { conn, isCommand }) => {
         
         try {
             await conn.sendMessage(m.chat, {
-                text: `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 🤫 𝐒𝐈𝐋𝐄𝐍𝐙𝐈𝐎 🤫 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 🚫 』 𝐔𝐭𝐞𝐧𝐭𝐞: *@${m.sender.split('@')[0]}*\n『 🔇 』 𝐒𝐭𝐚𝐭𝐨: _Non puoi parlare o usare comandi_\n『 📝 』 𝐌𝐨𝐭𝐢𝐯𝐨: _${data.reason}_\n『 ⏱️ 』 𝐓𝐞𝐦𝐩𝐨 𝐫𝐢𝐦𝐚𝐬𝐭𝐨: *${remaining}*\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`,
+                text: `ㅤㅤ⋆｡˚『 ╭ \`SEI MUTATO\` ╯ 』˚｡⋆\n╭\n│ 『 🚫 』 \`utente:\` *@${m.sender.split('@')[0]}*\n│ 『 🔇 』 \`stato:\` *Non puoi parlare o usare comandi*\n│ 『 📝 』 \`motivo:\` *${data.reason}*\n│ 『 ⏱️ 』 \`tempo:\` *${remaining}*\n*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`,
                 mentions: [m.sender],
                 contextInfo: {
                     ...global.fake.contextInfo,
@@ -427,5 +425,3 @@ handler.admin = true
 handler.botAdmin = true
 
 export default handler
-
-
