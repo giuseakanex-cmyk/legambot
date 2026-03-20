@@ -9,7 +9,7 @@ function formatNumber(num) {
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// 🔥 SCUDO VIP (Solo per Inizio e Fine partita, per evitare spam) 🔥
+// 🔥 SCUDO VIP 🔥
 const legamContext = (title) => ({
     isForwarded: true,
     forwardingScore: 999,
@@ -87,7 +87,7 @@ function calcolaQuote(sq1, sq2) {
 
 let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
     let chatId = m.chat;
-    let cmd = command.toLowerCase(); // Normalizza il comando
+    let cmd = command.toLowerCase(); 
 
     if (cmd === 'resetmatch' && isOwner) {
         if (global.virtualMatches[chatId]) {
@@ -141,14 +141,13 @@ let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
                 image: { url: VIRTUALI_IMAGE_URL },
                 caption: msg,
                 contextInfo: legamContext('Match Ufficiale')
-            }, { quoted: m }); // Cita il comando per aggirare lo spam
+            }, { quoted: m }); 
         } catch (imgError) {
             await conn.sendMessage(chatId, { text: msg, contextInfo: legamContext('Match Ufficiale') }, { quoted: m })
         }
 
-        // Passiamo l'oggetto 'm' alla partita, così il bot citerà il comando originale!
         global.virtualMatches[chatId].timer = setTimeout(async () => {
-            await avviaPartita(conn, chatId, m)
+            await avviaPartita(conn, chatId)
         }, 40000)
         return
     }
@@ -199,16 +198,19 @@ let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
     }
 }
 
-async function avviaPartita(conn, chatId, originalMsg) {
+// 🔥 IL MOTORE A TABELLONE LIVE (ANTI-SPAM WHATSAPP) 🔥
+async function avviaPartita(conn, chatId) {
     let match = global.virtualMatches[chatId]
     if (!match) return
     match.state = 'playing'
 
     try {
-        // Rimuoviamo il contextInfo dalla telecronaca e usiamo il quoted per battere l'anti-spam!
-        await conn.sendMessage(chatId, { 
-            text: `『 🚨 』 \`BOTTEGHINO CHIUSO!\`\n\n🏟️ Le squadre scendono in campo. FISCHIO D'INIZIO! ⚽`
-        }, { quoted: originalMsg })
+        // Creiamo la base del tabellone
+        let liveText = `✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n· 🔴 𝐃𝐈𝐑𝐄𝐓𝐓𝐀 𝐌𝐀𝐓𝐂𝐇 🔴 ·\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦\n\n『 🚨 』 \`BOTTEGHINO CHIUSO!\`\n🏟️ *FISCHIO D'INIZIO!* Le squadre scendono in campo.\n\n`;
+
+        // Inviamo il primo messaggio e salviamo la sua chiave (per modificarlo dopo)
+        let sentMsg = await conn.sendMessage(chatId, { text: liveText });
+        let editKey = sentMsg.key;
 
         let eventsCount = Math.floor(Math.random() * 3) + 4
         let minutiAzione = []
@@ -220,7 +222,7 @@ async function avviaPartita(conn, chatId, originalMsg) {
         let totalR = r1 + r2;
 
         for (let i = 0; i < eventsCount; i++) {
-            await delay(6000); 
+            await delay(5000); 
             
             let isTeam1 = Math.random() < (r1 / totalR) 
             let attackingTeam = isTeam1 ? match.sq1 : match.sq2
@@ -233,50 +235,59 @@ async function avviaPartita(conn, chatId, originalMsg) {
             if (actionType < 0.40) {
                 if (isTeam1) match.score1++; else match.score2++;
                 let stiliGol = [
-                    `che fa partire un missile terra-aria da fuori area!`,
-                    `che svetta più in alto di tutti su calcio d'angolo e insacca di testa!`,
+                    `che fa partire un missile terra-aria!`,
+                    `che svetta più in alto di tutti e insacca di testa!`,
                     `che salta netto l'ultimo difensore e deposita in rete!`,
-                    `che approfitta di una dormita clamorosa della difesa e non perdona!`
+                    `che approfitta di una dormita della difesa!`
                 ]
-                msg = `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n⚽ 𝐆𝐎𝐎𝐎𝐀𝐀𝐀𝐋 𝐏𝐄𝐑 𝐈𝐋 ${attackingTeam.toUpperCase()}!!!\nRete di *${player}* ${stiliGol[Math.floor(Math.random()*stiliGol.length)]}\n\n📊 *${match.sq1} [ ${match.score1} - ${match.score2} ] ${match.sq2}*`
-                await conn.sendMessage(chatId, { text: msg }, { quoted: originalMsg })
+                msg = `⚽ 𝐆𝐎𝐎𝐎𝐀𝐀𝐀𝐋 𝐏𝐄𝐑 𝐈𝐋 ${attackingTeam.toUpperCase()}!!!\n↳ Rete di *${player}* ${stiliGol[Math.floor(Math.random()*stiliGol.length)]}\n📊 *Risultato: ${match.sq1} [ ${match.score1} - ${match.score2} ] ${match.sq2}*`
             } 
             else if (actionType < 0.60) {
-                let msgVar = `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n📺 𝐀𝐓𝐓𝐄𝐍𝐙𝐈𝐎𝐍𝐄 𝐀𝐋 𝐕𝐀𝐑!\nCheck per un possibile fallo su *${player}* nell'area del ${defendingTeam}...`
-                await conn.sendMessage(chatId, { text: msgVar }, { quoted: originalMsg })
+                msg = `📺 𝐀𝐓𝐓𝐄𝐍𝐙𝐈𝐎𝐍𝐄 𝐀𝐋 𝐕𝐀𝐑!\n↳ Check per un possibile fallo su *${player}* nell'area del ${defendingTeam}...`
                 
-                await delay(6000); 
+                // Aggiorniamo il tabellone con la suspense del VAR
+                liveText += `▶️ ⏱️ *${minutiAzione[i]}'*: ${msg}\n\n`;
+                await conn.sendMessage(chatId, { text: liveText.trim(), edit: editKey }).catch(()=>{});
+                
+                await delay(4000); 
                 
                 if (Math.random() > 0.5) {
                     if (isTeam1) match.score1++; else match.score2++;
-                    msg = `✅ 𝐃𝐄𝐂𝐈𝐒𝐈𝐎𝐍𝐄 𝐕𝐀𝐑: 𝐄' 𝐑𝐈𝐆𝐎𝐑𝐄!\n*${player}* dal dischetto... RETE! Spiazza il portiere!\n\n📊 *${match.sq1} [ ${match.score1} - ${match.score2} ] ${match.sq2}*`
+                    msg = `✅ 𝐃𝐄𝐂𝐈𝐒𝐈𝐎𝐍𝐄 𝐕𝐀𝐑: 𝐄' 𝐑𝐈𝐆𝐎𝐑𝐄!\n↳ *${player}* dal dischetto... RETE!\n📊 *Risultato: ${match.sq1} [ ${match.score1} - ${match.score2} ] ${match.sq2}*`
                 } else {
-                    msg = `❌ 𝐃𝐄𝐂𝐈𝐒𝐈𝐎𝐍𝐄 𝐕𝐀𝐑: 𝐍𝐈𝐄𝐍𝐓𝐄 𝐑𝐈𝐆𝐎𝐑𝐄!\nSi continua a giocare, palla al ${defendingTeam}.`
+                    msg = `❌ 𝐃𝐄𝐂𝐈𝐒𝐈𝐎𝐍𝐄 𝐕𝐀𝐑: 𝐍𝐈𝐄𝐍𝐓𝐄 𝐑𝐈𝐆𝐎𝐑𝐄!\n↳ Si continua a giocare.`
                 }
-                await conn.sendMessage(chatId, { text: msg }, { quoted: originalMsg })
+                // Sostituiamo il testo del VAR con l'esito
+                liveText = liveText.replace(`📺 𝐀𝐓𝐓𝐄𝐍𝐙𝐈𝐎𝐍𝐄 𝐀𝐋 𝐕𝐀𝐑!\n↳ Check per un possibile fallo su *${player}* nell'area del ${defendingTeam}...\n\n`, `▶️ ⏱️ *${minutiAzione[i]}'*: ${msg}\n\n`);
             }
             else if (actionType < 0.80) {
-                msg = `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n😱 𝐌𝐈𝐑𝐀𝐂𝐎𝐋𝐎 𝐃𝐄𝐋 𝐏𝐎𝐑𝐓𝐈𝐄𝐑𝐄!\n*${player}* calcia a botta sicura, ma l'estremo difensore del ${defendingTeam} fa una parata pazzesca!`
-                await conn.sendMessage(chatId, { text: msg }, { quoted: originalMsg })
+                msg = `😱 𝐌𝐈𝐑𝐀𝐂𝐎𝐋𝐎 𝐃𝐄𝐋 𝐏𝐎𝐑𝐓𝐈𝐄𝐑𝐄!\n↳ *${player}* calcia a botta sicura, ma l'estremo difensore salva tutto!`
             } else {
                 let defPlayer = getPlayer(defendingTeam)
-                msg = `⏱️ 𝐌𝐢𝐧𝐮𝐭𝐨 ${minutiAzione[i]}'\n🟨 *𝐂𝐀𝐑𝐓𝐄𝐋𝐋𝐈𝐍𝐎 𝐆𝐈𝐀𝐋𝐋𝐎!*\nIntervento in ritardo di *${defPlayer}* (${defendingTeam}) per fermare il contropiede di ${player}.`
-                await conn.sendMessage(chatId, { text: msg }, { quoted: originalMsg })
+                msg = `🟨 *𝐂𝐀𝐑𝐓𝐄𝐋𝐋𝐈𝐍𝐎 𝐆𝐈𝐀𝐋𝐋𝐎!*\n↳ Intervento in ritardo di *${defPlayer}* per fermare ${player}.`
             }
+
+            // Se non era il VAR, aggiungiamo semplicemente l'azione al tabellone
+            if (actionType >= 0.40 && actionType < 0.60 === false) {
+                liveText += `▶️ ⏱️ *${minutiAzione[i]}'*: ${msg}\n\n`;
+            }
+
+            // Aggiorniamo il tabellone
+            await conn.sendMessage(chatId, { text: liveText.trim(), edit: editKey }).catch(()=>{});
         }
 
-        await delay(5000);
-        await finalizeGame(conn, chatId, match, originalMsg)
+        await delay(4000);
+        await finalizeGame(conn, chatId, match)
 
     } catch (err) {
         console.error("[VIRTUALI] Errore critico in avviaPartita:", err)
         refundBets(match)
-        await conn.sendMessage(chatId, { text: `『 ❌ 』 \`Errore tecnico sul server. Partita annullata e puntate rimborsate.\`` }, { quoted: originalMsg })
+        await conn.sendMessage(chatId, { text: `『 ❌ 』 \`Errore tecnico di connessione. Partita annullata e puntate rimborsate.\`` })
         delete global.virtualMatches[chatId]
     }
 }
 
-async function finalizeGame(conn, chatId, match, originalMsg) {
+async function finalizeGame(conn, chatId, match) {
     try {
         let is1 = match.score1 > match.score2
         let isX = match.score1 === match.score2
@@ -326,22 +337,21 @@ async function finalizeGame(conn, chatId, match, originalMsg) {
         finale += match.bets.length === 0 ? `\n│ 😅 \`Nessuna giocata registrata.\`` : winnersTxt
         finale += `\n\n✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`
 
-        // Qui rimettiamo la grafica VIP per annunciare i vincitori!
+        // Invio Finale con le menzioni
         await conn.sendMessage(chatId, { 
             text: finale.trim(), 
             mentions: scommettitori,
             contextInfo: legamContext('Risultati Finali')
-        }, { quoted: originalMsg })
+        })
     } catch (e) {
         console.error("[VIRTUALI] Errore nel finalizeGame:", e)
         refundBets(match)
-        await conn.sendMessage(chatId, { text: `『 ❌ 』 \`Errore tecnico. Le puntate sono state rimborsate in automatico.\`` }, { quoted: originalMsg })
+        await conn.sendMessage(chatId, { text: `『 ❌ 』 \`Errore tecnico al fischio finale. Le puntate sono state rimborsate.\`` })
     } finally {
         delete global.virtualMatches[chatId] 
     }
 }
 
-// 🔥 FIX DEFINITIVO: ROTTA DEI COMANDI BLINDATA CON REGEX 🔥
 handler.command = /^(virtuali|bet|punta|resetmatch)$/i;
 handler.group = true
 export default handler
