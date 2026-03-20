@@ -1,41 +1,65 @@
-let handler = async (m, { conn, isROwner }) => {
-    // Reazione di sistema
-    await conn.sendMessage(m.chat, { react: { text: '⚙️', key: m.key } });
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-    let msg = `
+let handler = async (m, { conn }) => {
+
+    // 1. Invia il primo messaggio e ne salva la "chiave" (per poterlo modificare dopo)
+    let { key } = await conn.sendMessage(m.chat, {
+        text: `『 🔄 』 \`Inizializzazione riavvio...\``
+    }, { quoted: m })
+
+    await delay(1000) // Aspetta 1 secondo
+
+    // 2. Modifica il messaggio (Animazione Terminale)
+    await conn.sendMessage(m.chat, {
+        text: `『 ⚙️ 』 \`Salvataggio database e sessioni...\``, 
+        edit: key
+    })
+
+    await delay(1000)
+
+    // 3. Modifica il messaggio
+    await conn.sendMessage(m.chat, {
+        text: `『 🚀 』 \`Riavvio motore Legam OS...\``, 
+        edit: key
+    })
+
+    await delay(1000)
+
+    // 4. Messaggio finale VIP
+    let finalMsg = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
-·  𝐋 𝐄 𝐆 𝐀 𝐌  𝐂 𝐎 𝐑 𝐄  ·
+· ♻️ 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐑𝐈𝐀𝐕𝐕𝐈𝐀𝐓𝐎 ♻️ ·
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 
-『 🔄 』 𝐑 𝐈 𝐀 𝐕 𝐕 𝐈 𝐎
-➤ Inizializzazione protocollo...
-➤ Chiusura connessioni socket...
-➤ Svuotamento cache di memoria...
+Il bot è stato disconnesso e 
+ricollegato con successo al server.
 
-\`Il sistema si sta riavviando e tornerà online a breve.\`
+👑 _Tutti i sistemi sono online._
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim()
 
-👑 𝐎𝐖𝐍𝐄𝐑
-➤ 𝐆𝐈𝐔𝐒𝚵
+    await conn.sendMessage(m.chat, {
+        text: finalMsg, 
+        edit: key
+    })
 
-✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim();
+    await delay(500) // Breve pausa per far leggere il messaggio prima di spegnere
 
-    // Invia il messaggio con l'estetica Legam OS (Newsletter + Logo)
-    await conn.reply(m.chat, msg, m, global.rcanal);
-
-    // Aspetta 2 secondi per assicurarsi che il messaggio venga inviato prima di spegnersi
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Forza la chiusura del processo Node.js. 
-    // (Se avvii il bot con uno script loop o pm2, si riaccenderà da solo istantaneamente)
-    process.exit(1);
+    // 🔥 MOTORE DI RIAVVIO SICURO 🔥
+    // Se il bot è gestito da un file index.js esterno (metodo moderno)
+    if (process.send) {
+        process.send('reset')
+    } else {
+        // Se è gestito da PM2, nodemon o bash (metodo classico)
+        process.exit(0)
+    }
 }
 
-handler.help = ['riavvia', 'restart'];
-handler.tags = ['owner'];
-handler.command = /^(riavvia|restart)$/i;
+handler.help = ['riavvia', 'restart'] 
+handler.tags = ['owner']
+handler.command = /^(riavvia|reiniciar|restart)$/i 
 
-// IL SEGRETO È QUI: Solo tu (Owner) puoi spegnere o riavviare il bot.
-handler.owner = true;
+handler.owner = true // Solo tu puoi riavviarlo
 
-export default handler;
+export default handler
+
 
