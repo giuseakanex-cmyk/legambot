@@ -20,7 +20,6 @@ function formatViews(views) {
 
 let handler = async (m, { conn, command, text, usedPrefix }) => {
     
-    // 1. Menu se non viene inserito un testo
     if (!text) {
         let helpMessage = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
@@ -40,24 +39,23 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
         return conn.sendMessage(m.chat, { text: helpMessage, contextInfo: legamContext('Music Player') }, { quoted: m });
     }
 
-    // Imposta lo stato su "Registrazione audio..."
     await conn.sendPresenceUpdate('recording', m.chat);
 
     try {
-        // 2. Ricerca del Video
+        // 1. Ricerca del Video
         let searchResults = await ytSearch(text);
         if (!searchResults || !searchResults.videos.length) {
             return m.reply(`『 ❌ 』 \`Nessun risultato trovato per: ${text}\``);
         }
 
-        let video = searchResults.videos[0]; // Prende il miglior risultato
+        let video = searchResults.videos[0]; 
 
         // Limite di tempo (20 minuti)
         if (video.seconds > 1200) {
             return m.reply(`『 ⏱️ 』 \`Video troppo lungo! Il limite massimo è di 20 minuti.\``);
         }
 
-        // 3. Grafica "In Download" VIP
+        // 2. Grafica "In Download" VIP
         let isAudio = command === 'play' || command === 'playaudio';
         let tipoIcona = isAudio ? '🎧' : '🎥';
         let tipoTesto = isAudio ? 'Audio' : 'Video';
@@ -72,7 +70,7 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
 『 ⏱️ 』 𝐃𝐮𝐫𝐚𝐭𝐚: *${video.timestamp}*
 『 👁️ 』 𝐕𝐢𝐞𝐰𝐬: *${formatViews(video.views)}*
 
-⏳ _Elaborazione del file ${tipoTesto} in corso..._
+⏳ _Ricerca nei server globali in corso..._
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim();
 
         let processingMsg = await conn.sendMessage(m.chat, {
@@ -81,21 +79,40 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
             contextInfo: legamContext('Download in corso...')
         }, { quoted: m });
 
-        // 4. Connessione alle API ultra veloci
-        let apiUrl = isAudio 
-            ? `https://api.siputzx.my.id/api/d/ytmp3?url=${video.url}`
-            : `https://api.siputzx.my.id/api/d/ytmp4?url=${video.url}`;
+        // 3. 🔥 SISTEMA MULTI-API (CASCATA) 🔥
+        // Se la prima API fallisce, prova le successive in automatico
+        let downloadUrl = null;
+        let apis = isAudio ? [
+            `https://api.siputzx.my.id/api/d/ytmp3?url=${video.url}`,
+            `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${video.url}`,
+            `https://api.vreden.my.id/api/ytmp3?url=${video.url}`,
+            `https://api.agatz.xyz/api/ytmp3?url=${video.url}`
+        ] : [
+            `https://api.siputzx.my.id/api/d/ytmp4?url=${video.url}`,
+            `https://api.ryzendesu.vip/api/downloader/ytmp4?url=${video.url}`,
+            `https://api.vreden.my.id/api/ytmp4?url=${video.url}`,
+            `https://api.agatz.xyz/api/ytmp4?url=${video.url}`
+        ];
 
-        let res = await fetch(apiUrl);
-        let json = await res.json();
-
-        if (!json.status || !json.data || !json.data.dl) {
-            throw new Error("Errore API di conversione.");
+        for (let api of apis) {
+            try {
+                let res = await fetch(api);
+                let json = await res.json();
+                
+                // Controlla tutte le possibili risposte delle varie API
+                downloadUrl = json?.data?.dl || json?.url || json?.data?.url || json?.result?.download?.url || json?.data?.downloadUrl;
+                
+                if (downloadUrl) break; // Se trova il link, esce dal loop e scarica!
+            } catch (e) {
+                continue; // Se l'API è down, salta alla prossima
+            }
         }
 
-        let downloadUrl = json.data.dl;
+        if (!downloadUrl) {
+            throw new Error("API_DOWN");
+        }
 
-        // 5. Invio del File Reale
+        // 4. Invio del File Reale
         if (isAudio) {
             await conn.sendMessage(m.chat, {
                 audio: { url: downloadUrl },
@@ -126,7 +143,7 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
     } catch (e) {
         console.error("[LEGAM MUSIC ERROR] ", e);
         await conn.sendMessage(m.chat, { 
-            text: `『 ❌ 』 \`Errore di rete.\`\n_Non sono riuscito a estrarre il file da YouTube in questo momento. Riprova tra poco!_`,
+            text: `『 ❌ 』 \`Errore Server.\`\n_Tutti i server di conversione sono attualmente saturi. Riprova tra 5 minuti!_`,
             contextInfo: legamContext('Errore Server')
         }, { quoted: m });
     } finally {
@@ -136,9 +153,7 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
 
 handler.help = ['play <titolo>', 'playvideo <titolo>'];
 handler.tags = ['download'];
-// Cattura i comandi play, playaudio, playvideo
 handler.command = /^(play|playaudio|playvideo)$/i;
 
 export default handler;
-
 
