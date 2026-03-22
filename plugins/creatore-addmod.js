@@ -37,6 +37,7 @@ const handler = async (m, { conn }) => {
 『 ⚖️ 』 𝐂𝐨𝐧𝐝𝐢𝐳𝐢𝐨𝐧𝐞: Fino all'inevitabile tradimento.
 👑 Ti è stato concesso il potere. Non deluderci.
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.
+
 '.trim();
 
 
