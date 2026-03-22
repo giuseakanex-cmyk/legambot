@@ -146,7 +146,7 @@ export async function participantsUpdate({ id, participants, action }) {
                             mediaType: 1, 
                             renderLargerThumbnail: false,
                             thumbnailUrl: pp,
-                            sourceUrl: 'https://whatsapp.com/channel/0029VaE20oQ6hENrL2B5wB0e' // OBBLIGATORIO PER NON FAR CRASHARE WHATSAPP
+                            sourceUrl: 'https://whatsapp.com/channel/0029VaE20oQ6hENrL2B5wB0e'
                         }
                     }
                 }); 
@@ -180,7 +180,6 @@ export async function handler(chatUpdate) {
     m = smsg(this, m, global.store)
     if (!m || !m.key || !m.chat || !m.sender) return
 
-    // 🔥 LEGAM OS: INTERCETTATORE DI STUB (SOLO ENTRATE E USCITE) 🔥
     if (m.messageStubType && m.isGroup) {
         let actionTrigger = '';
         if (m.messageStubType === 27) actionTrigger = 'add';
@@ -206,7 +205,6 @@ export async function handler(chatUpdate) {
     }
     if (!m.key.remoteJid) return
     
-    // FIX BOTTONI
     let extractedText = m.message?.conversation || m.message?.extendedTextMessage?.text || '';
     
     if (m.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson) {
@@ -300,9 +298,6 @@ export async function handler(chatUpdate) {
             }
         }
 
-        // ==========================================
-        // LEGAM OS - TERMINAL LOGGER VIP
-        // ==========================================
         if (m.text || m.mtype) {
             let testoLog = m.text || `[Media: ${m.mtype}]`;
             if (!m.messageStubType) {
@@ -313,8 +308,9 @@ export async function handler(chatUpdate) {
                 
                 let ruolo = chalk.gray('[👤 UTENTE]');
                 if (isOwner) ruolo = chalk.magenta.bold('[👑 OWNER]');
-                else if (isAdmin) ruolo = chalk.blue.bold('[🛡️ ADMIN]');
-                else if (isPrems || isMods) ruolo = chalk.yellow.bold('[💎 VIP]');
+                else if (isMods) ruolo = chalk.green.bold('[🛡️ MOD]');
+                else if (isAdmin) ruolo = chalk.blue.bold('[⭐ ADMIN]');
+                else if (isPrems) ruolo = chalk.yellow.bold('[💎 VIP]');
 
                 let isCmd = m.text && /^[.#!\\/]/.test(m.text.trim());
                 let testoColorato = isCmd ? chalk.yellowBright.bold(testoLog) : chalk.white(testoLog);
@@ -329,12 +325,9 @@ export async function handler(chatUpdate) {
                 );
             }
         }
-        // ==========================================
 
         const ___dirname = join(path.dirname(fileURLToPath(import.meta.url)), './plugins')
         
-        // 🔥 FIX LEGAM OS: MOTORE DEGLI INTERCETTATORI (plugin.before) 🔥
-        // Questo ciclo mancava! E' quello che fa funzionare il Muto, cancellando i messaggi.
         for (let name in global.plugins) {
             let plugin = global.plugins[name]
             if (!plugin) continue
@@ -397,7 +390,9 @@ export async function handler(chatUpdate) {
                     }
                 }
                 
-                if (m.isGroup && chat.modoadmin && !isAdmin && !isOwner && !isROwner && !isMods && !isPrems) continue;
+                // 🔥 BYPASS MODOADMIN PER I MODERATORI 🔥
+                if (m.isGroup && chat.modoadmin && !isAdmin && !isOwner && !isROwner && !isMods) continue;
+                
                 if (settings.soloCreatore && !isROwner && !isOwner) continue;
                 if (chat.isBanned && !isROwner && !isOwner && !isMods) continue;
 
@@ -409,17 +404,14 @@ export async function handler(chatUpdate) {
                     continue;
                 }
 
-                // Controllo muto vecchio database
-                if (user.muto && !isROwner && !isOwner) {
+                if (user.muto && !isROwner && !isOwner && !isMods) {
                     await this.sendMessage(m.chat, { text: `🚫 Non puoi usare i comandi se sei stato mutato!` }, { quoted: m });
                     continue; 
                 }
 
-                // 🔥 PONTE LEGAM OS: Controllo muto nuovo RAM (collegato a muta.js) 🔥
                 if (global.gpMutaSmuta && global.gpMutaSmuta.mutedUsers) {
                     let normId = global.gpMutaSmuta.normalizeId(this.decodeJid(m.sender));
-                    if (global.gpMutaSmuta.mutedUsers.has(normId) && !isROwner && !isOwner) {
-                        // Salta il comando silenziosamente, l'intercettatore prima ha già cancellato il messaggio
+                    if (global.gpMutaSmuta.mutedUsers.has(normId) && !isROwner && !isOwner && !isMods) {
                         continue;
                     }
                 }
@@ -456,7 +448,10 @@ export async function handler(chatUpdate) {
                 if (plugin.mods && !isMods) { fail('mods', m, this); continue } 
                 if (plugin.premium && !isPrems) { fail('premium', m, this); continue } 
                 if (plugin.group && !m.isGroup) { fail('group', m, this); continue }
-                if (plugin.admin && !isAdmin) { fail('admin', m, this); continue }
+                
+                // 🔥 IL PASSAPORTO VIP: I MODERATORI IGNORANO L'OBBLIGO DI ESSERE ADMIN 🔥
+                if (plugin.admin && !isAdmin && !isMods && !isOwner) { fail('admin', m, this); continue }
+                
                 if (plugin.botAdmin && !isBotAdmin) { fail('botAdmin', m, this); continue }
 
                 try {
