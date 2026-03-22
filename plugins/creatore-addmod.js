@@ -29,14 +29,16 @@ const handler = async (m, { conn }) => {
   const name = '@' + who.split('@')[0];
 
   const caption = `
-╭━✧  𝐿𝛴𝐺𝛬𝑀 𝚩𝚯𝐓  ✦╮
-        🛡️ 𝗡𝗨𝗢𝗩𝗢 𝗣𝗥𝗘𝗦𝗖𝗘𝗟𝗧𝗢! 🛡️
-╰━━━━━━✧✦━━━━━━╯
+`✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
+· 🩸 𝐏𝐀𝐓𝐓𝐎 𝐃𝐈 𝐒𝐀𝐍𝐆𝐔𝐄 🩸 ·
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
+『 🛡️ 』 𝐍𝐨𝐦𝐢𝐧𝐚: ${name}
+『 📍 』 𝐃𝐨𝐦𝐢𝐧𝐢𝐨: Limitato a questo territorio
+『 ⚖️ 』 𝐂𝐨𝐧𝐝𝐢𝐳𝐢𝐨𝐧𝐞: Fino all'inevitabile tradimento.
+👑 Ti è stato concesso il potere. Non deluderci.
+✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.
+'.trim();
 
-👤 Utente: ${name}
-⚡ Attivo solo qui
-♾️ Fino al tradimento..
-`.trim();
 
   await conn.sendMessage(
     m.chat,
