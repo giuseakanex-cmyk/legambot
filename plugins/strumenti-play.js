@@ -153,7 +153,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 };
 
 handler.help = ['play', 'playvid'];
-handler.tags = ['gruppo'];
+handler.tags = ['strumenti'];
 handler.command = /^(play|playaud|playvid|playvideo)$/i;
 
 export default handler;
