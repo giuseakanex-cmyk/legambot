@@ -18,7 +18,6 @@ const legamContext = (title) => ({
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
     
-    // 1. MENU DI ISTRUZIONI VIP (Se non scrive il titolo)
     if (!text) {
         let helpMessage = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
@@ -26,15 +25,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 
 『 💡 』 *𝐂𝐨𝐦𝐞 𝐬𝐜𝐚𝐫𝐢𝐜𝐚𝐫𝐞:*
-Non servono menu. Chiedi e ti sarà dato.
 
-│ 🎵 ➭ \`${usedPrefix}play <nome canzone>\`
-│ _Ricevi l'Audio (MP3 ad alta fedeltà)_
+│ 🎵 ➭ \`${usedPrefix}play <titolo>\`
+│ _Audio (MP3 Studio 128k)_
 
-│ 🎬 ➭ \`${usedPrefix}playvid <nome video>\`
-│ _Ricevi il Video (MP4 in alta qualità)_
+│ 🎬 ➭ \`${usedPrefix}playvid <titolo>\`
+│ _Video (MP4 HQ)_
 
-📌 *Esempio pratico:* \`${usedPrefix}play Lazza Cenere\`
+📌 *Esempio:* \`${usedPrefix}play Lazza Cenere\`
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim();
         return conn.sendMessage(m.chat, { text: helpMessage, contextInfo: legamContext('Music Engine') }, { quoted: m });
     }
@@ -43,7 +41,7 @@ Non servono menu. Chiedi e ti sarà dato.
         await conn.sendPresenceUpdate('recording', m.chat);
         await m.react('⏳');
 
-        // 2. RICERCA DEL VIDEO
+        // 1. RICERCA DEL BRANO
         const search = await yts(text);
         const vid = search.videos[0];
         
@@ -54,7 +52,7 @@ Non servono menu. Chiedi e ti sarà dato.
         const isAudio = command === 'play' || command === 'playaud';
         let tipoIcona = isAudio ? '🎧' : '🎬';
 
-        // 3. GRAFICA DI ELABORAZIONE LEGAM OS
+        // 2. GRAFICA DI ATTESA VIP
         let captionInfo = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 · ${tipoIcona} 𝐄𝐒𝐓𝐑𝐀𝐙𝐈𝐎𝐍𝐄 𝐈𝐍 𝐂𝐎𝐑𝐒𝐎 ${tipoIcona} ·
@@ -64,7 +62,7 @@ Non servono menu. Chiedi e ti sarà dato.
 『 ⏱️ 』 𝐃𝐮𝐫𝐚𝐭𝐚: *${vid.timestamp}*
 『 👤 』 𝐀𝐫𝐭𝐢𝐬𝐭𝐚: *${vid.author.name}*
 
-⚙️ _Sincronizzazione col motore FFmpeg..._
+⚙️ _Sincronizzazione motore ibrido..._
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim();
 
         let processingMsg = await conn.sendMessage(m.chat, {
@@ -73,43 +71,61 @@ Non servono menu. Chiedi e ti sarà dato.
             contextInfo: legamContext('Elaborazione dati...')
         }, { quoted: m });
 
-        // 4. RICERCA LINK (Metodo Infallibile a Cascata)
         let downloadUrl = null;
-        let apis = isAudio ? [
-            `https://api.siputzx.my.id/api/d/ytmp3?url=${url}`,
-            `https://api.vreden.my.id/api/ytmp3?url=${url}`,
-            `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${url}`
-        ] : [
-            `https://api.siputzx.my.id/api/d/ytmp4?url=${url}`,
-            `https://api.vreden.my.id/api/ytmp4?url=${url}`,
-            `https://api.ryzendesu.vip/api/downloader/ytmp4?url=${url}`
-        ];
 
-        for (let api of apis) {
-            try {
-                let res = await fetch(api);
-                let json = await res.json();
-                let possibilita = [json?.data?.dl, json?.result?.download?.url, json?.result?.url, json?.url];
-                downloadUrl = possibilita.find(p => p && p.startsWith('http'));
-                if (downloadUrl) break; // Link trovato!
-            } catch (e) { continue; }
+        // 3. MOTORE IBRIDO FASE 1: Estrazione Dinamica (Senza Crash)
+        // Prova ad usare la libreria in modo invisibile. Se manca, non crasha.
+        try {
+            const fg = await import('api-dylux');
+            if (fg && fg.default) {
+                let res = isAudio ? await fg.default.yta(url) : await fg.default.ytv(url);
+                if (res && res.dl_url) downloadUrl = res.dl_url;
+            }
+        } catch (e) {
+            // Silenzio assoluto se la libreria non c'è. Passa al Piano B.
         }
 
-        if (!downloadUrl) throw new Error("API completely down");
+        // 4. MOTORE IBRIDO FASE 2: L'Armata dei Server Backup
+        if (!downloadUrl) {
+            let ext = isAudio ? 'mp3' : 'mp4';
+            let apis = [
+                `https://dark-yasiya-api-new.vercel.app/download/yt${ext}?url=${url}`,
+                `https://api.vreden.my.id/api/yt${ext}?url=${url}`,
+                `https://api.siputzx.my.id/api/d/yt${ext}?url=${url}`,
+                `https://itzpire.com/download/youtube?url=${url}`,
+                `https://api.ryzendesu.vip/api/downloader/yt${ext}?url=${url}`
+            ];
 
-        // 5. IL TRUCCO DEI PROFESSIONISTI: SCARICA E CONVERTI FISICAMENTE
+            for (let api of apis) {
+                try {
+                    let res = await fetch(api);
+                    let json = await res.json();
+                    
+                    // Ricerca spietata del link dentro il JSON
+                    let possibilita = [
+                        json?.data?.dl, json?.result?.download?.url, 
+                        json?.result?.url, json?.url, json?.data?.url
+                    ];
+                    
+                    downloadUrl = possibilita.find(p => p && typeof p === 'string' && p.startsWith('http'));
+                    if (downloadUrl) break; // Appena ne trova uno funzionante, ferma la ricerca!
+                } catch (e) { continue; }
+            }
+        }
+
+        if (!downloadUrl) throw new Error("Tutti i sistemi offline.");
+
+        // 5. DOWNLOAD FISICO E CONVERSIONE FFMPEG
         const tmpDir = os.tmpdir();
         const inputPath = path.join(tmpDir, `legam_in_${Date.now()}`);
         const outputPath = path.join(tmpDir, `legam_out_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`);
 
-        // Scarica il file nel server
         const res = await fetch(downloadUrl);
         const arrayBuffer = await res.arrayBuffer();
         fs.writeFileSync(inputPath, Buffer.from(arrayBuffer));
 
-        // 6. INVIO DEL FILE
         if (isAudio) {
-            // Converte il file in un MP3 standard (Evita i bug di WhatsApp Web e iPhone)
+            // Forza la conversione in MP3 pulito a 128k
             await new Promise((resolve, reject) => {
                 exec(`ffmpeg -i "${inputPath}" -vn -ar 44100 -ac 2 -b:a 128k "${outputPath}"`, (err) => {
                     if (err) reject(err);
@@ -121,7 +137,7 @@ Non servono menu. Chiedi e ti sarà dato.
                 audio: fs.readFileSync(outputPath),
                 mimetype: 'audio/mpeg',
                 fileName: `${vid.title}.mp3`,
-                ptt: false, // Inviato come traccia musicale
+                ptt: false, // File musicale
                 contextInfo: {
                     ...legamContext('Legam Player'),
                     externalAdReply: {
@@ -136,7 +152,7 @@ Non servono menu. Chiedi e ti sarà dato.
             }, { quoted: processingMsg });
 
         } else {
-            // I video non necessitano di conversione audio
+            // Video (Rinomina e invia)
             fs.renameSync(inputPath, outputPath);
             
             await conn.sendMessage(m.chat, {
@@ -148,7 +164,7 @@ Non servono menu. Chiedi e ti sarà dato.
             }, { quoted: processingMsg });
         }
 
-        // 7. PULIZIA SERVER (Cruciale per non bloccare la VPS)
+        // 6. PULIZIA DISCO
         if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
         if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
         
@@ -157,7 +173,7 @@ Non servono menu. Chiedi e ti sarà dato.
     } catch (e) {
         console.error("[LEGAM MUSIC ERROR]", e);
         await m.react('❌');
-        m.reply('『 ❌ 』 \`Sistema sovraccarico.\`\n_Non sono riuscito ad estrarre la traccia. Riprova tra poco!_');
+        m.reply('『 ❌ 』 \`Rete Sovraccarica.\`\n_Sia i server principali che i backup sono intasati in questo momento. Riprova!_');
     } finally {
         await conn.sendPresenceUpdate('paused', m.chat);
     }
@@ -165,7 +181,6 @@ Non servono menu. Chiedi e ti sarà dato.
 
 handler.help = ['play', 'playvid'];
 handler.tags = ['downloader'];
-// Intercetta i comandi diretti
 handler.command = /^(play|playaud|playvid|playvideo)$/i;
 
 export default handler;
