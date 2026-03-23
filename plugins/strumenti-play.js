@@ -1,12 +1,10 @@
 import yts from 'yt-search';
-import fg from 'api-dylux';
 import fetch from 'node-fetch';
 import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-// 🔥 SCUDO VIP LEGAM OS 🔥
 const legamContext = (title) => ({
     isForwarded: true,
     forwardingScore: 999,
@@ -41,16 +39,18 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         await conn.sendPresenceUpdate('recording', m.chat);
         await conn.sendMessage(m.chat, { react: { text: "⚡", key: m.key } });
 
-        // 1. Ricerca del Video
         const search = await yts(text);
         const vid = search.videos[0];
-        if (!vid) return m.reply('『 ⚠️ 』 \`Risultato non trovato. Prova a cambiare parole chiave.\`');
+        if (!vid) return m.reply('『 ⚠️ 』 \`Risultato non trovato.\`');
+
+        if (vid.seconds > 1200) {
+            return m.reply('『 ⏱️ 』 \`Video troppo lungo! Massimo 20 minuti.\`');
+        }
 
         const url = vid.url;
         const isAudio = command === 'play' || command === 'playaud';
         let tipoIcona = isAudio ? '🎧' : '🎥';
 
-        // 2. Grafica Iniziale Legam OS
         let captionInfo = `
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦
 · ${tipoIcona} 𝐈𝐍 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃 ${tipoIcona} ·
@@ -60,37 +60,37 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 『 ⏱️ 』 𝐃𝐮𝐫𝐚𝐭𝐚: *${vid.timestamp}*
 『 👤 』 𝐀𝐮𝐭𝐨𝐫𝐞: *${vid.author.name}*
 
-⏳ _Elaborazione tramite motore FFmpeg..._
+⏳ _Estrazione audio dal server globale..._
 ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦ ⁺ . ⁺ ✦`.trim();
 
         let processingMsg = await conn.sendMessage(m.chat, {
             image: { url: vid.thumbnail },
             caption: captionInfo,
-            contextInfo: legamContext('Estrazione in corso...')
+            contextInfo: legamContext('Elaborazione in corso...')
         }, { quoted: m });
 
-        // 3. Estrazione Link (Tua logica con Fallback)
         let downloadUrl = null;
-        try {
-            let res = isAudio ? await fg.yta(url) : await fg.ytv(url);
-            if (res && res.dl_url) downloadUrl = res.dl_url;
-        } catch {
+        let apis = isAudio ? [
+            `https://api.vreden.my.id/api/ytmp3?url=${url}`,
+            `https://api.siputzx.my.id/api/d/ytmp3?url=${url}`,
+            `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${url}`
+        ] : [
+            `https://api.vreden.my.id/api/ytmp4?url=${url}`,
+            `https://api.siputzx.my.id/api/d/ytmp4?url=${url}`,
+            `https://api.ryzendesu.vip/api/downloader/ytmp4?url=${url}`
+        ];
+
+        for (let api of apis) {
             try {
-                let api = isAudio ? 'ytmp3' : 'ytmp4';
-                let res = await fetch(`https://api.vreden.my.id/api/${api}?url=${url}`);
+                let res = await fetch(api);
                 let json = await res.json();
-                downloadUrl = json.result?.download?.url || json.result?.url;
-            } catch {
-                let api = isAudio ? 'ytmp3' : 'ytmp4';
-                let res = await fetch(`https://api.siputzx.my.id/api/d/${api}?url=${url}`);
-                let json = await res.json();
-                downloadUrl = json?.data?.dl;
-            }
+                downloadUrl = json?.data?.dl || json?.result?.download?.url || json?.result?.url || json?.url;
+                if (downloadUrl && downloadUrl.startsWith('http')) break;
+            } catch (e) { continue; }
         }
 
         if (!downloadUrl) throw new Error("API DOWN");
 
-        // 4. LA MAGIA: Download fisico sulla VPS
         const tmpDir = os.tmpdir();
         const inputPath = path.join(tmpDir, `input_${Date.now()}`);
         const outputPath = path.join(tmpDir, `output_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`);
@@ -99,10 +99,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         const arrayBuffer = await res.arrayBuffer();
         fs.writeFileSync(inputPath, Buffer.from(arrayBuffer));
 
-        // 5. Conversione FFmpeg e Invio
         if (isAudio) {
             await new Promise((resolve, reject) => {
-                exec(`ffmpeg -i ${inputPath} -vn -ar 44100 -ac 2 -b:a 128k ${outputPath}`, (err) => {
+                exec(`ffmpeg -i "${inputPath}" -vn -ar 44100 -ac 2 -b:a 128k "${outputPath}"`, (err) => {
                     if (err) reject(err);
                     else resolve();
                 });
@@ -112,7 +111,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
                 audio: fs.readFileSync(outputPath),
                 mimetype: 'audio/mpeg',
                 fileName: `${vid.title}.mp3`,
-                ptt: false, // Se metti true manda come vocale, false come file audio musicale
+                ptt: false, 
                 contextInfo: {
                     ...legamContext('Legam Player'),
                     externalAdReply: {
@@ -127,18 +126,16 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
             }, { quoted: processingMsg });
 
         } else {
-            // Per il video non serve conversione, rinominiamo e inviamo
             fs.renameSync(inputPath, outputPath);
             await conn.sendMessage(m.chat, {
                 video: fs.readFileSync(outputPath),
                 mimetype: 'video/mp4',
-                caption: `『 ✅ 』 *Video scaricato con successo!*\n> ${vid.title}`,
+                caption: `『 ✅ 』 *Video scaricato!*\n> ${vid.title}`,
                 fileName: `${vid.title}.mp4`,
                 contextInfo: legamContext('Legam Player')
             }, { quoted: processingMsg });
         }
 
-        // 6. Pulizia server immediata
         if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
         if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
         await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } });
@@ -146,7 +143,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     } catch (e) {
         console.error("[LEGAM PLAY ERROR]", e);
         await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } });
-        m.reply('『 ❌ 』 \`Errore Server:\`\n_File non disponibile, API off o FFmpeg non installato sulla macchina._');
+        m.reply('『 ❌ 』 \`Errore Estrazione:\` _Server di conversione temporaneamente saturi._');
     } finally {
         await conn.sendPresenceUpdate('paused', m.chat);
     }
